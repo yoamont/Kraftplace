@@ -1,0 +1,2 @@
+-- (Obsolète : la table a été renommée en « brands ». Utilisez supabase-brands-rls-select-own.sql)
+-- Ancienne politique pour la table profiles.

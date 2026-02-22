@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Kraftplace — Charte: beige/marron papier kraft, noir profond, blanc cassé. Contraste maximum. */
+:root {
+  --background: #faf6ef;
+  --foreground: #0a0a0a;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /* Palette kraft — beige/marron chaleureux (hex directs pour génération des utilitaires) */
+  --color-kraft-50: #faf6ef;
+  --color-kraft-100: #f0e6d8;
+  --color-kraft-200: #e2d4c2;
+  --color-kraft-300: #c9b896;
+  --color-kraft-400: #a68b65;
+  --color-kraft-500: #8b6f47;
+  --color-kraft-600: #6b5436;
+  --color-kraft-700: #5c4a38;
+  --color-kraft-800: #3d3228;
+  --color-kraft-900: #2a231c;
+  --color-kraft-950: #1a1612;
+  --color-kraft-black: #0a0a0a;
+  --color-kraft-off-white: #faf6ef;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #faf6ef;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Wordmark — K très imposant, typo brute sans fioritures */
+.kraftplace-wordmark {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.kraftplace-wordmark::first-letter {
+  font-size: 1.4em;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
