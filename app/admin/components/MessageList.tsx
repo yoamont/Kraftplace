@@ -1,74 +1,54 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useChat } from '@/lib/hooks/useChat';
+import { MessageEntry } from '@/app/admin/messaging/MessageEntry';
 import { Loader2 } from 'lucide-react';
-import type { CandidatureThreadMessage } from '@/lib/supabase';
-import { MessageItem } from './MessageItem';
+import { getOrCreateConversationId } from '@/lib/conversations';
+import { useState, useEffect } from 'react';
 
 type MessageListProps = {
-  /** ID de la candidature dont on affiche le fil */
-  candidatureId: string;
-  /** Côté du viewer (brand ou showroom) pour l’alignement des bulles */
+  /** Candidature (brand_id, showroom_id) pour résoudre la conversation */
+  brandId: number;
+  showroomId: number;
+  /** Côté du viewer pour isMe */
   viewerSide: 'brand' | 'showroom';
-  /** Messages (chargés par le parent ou vide pour chargement interne) */
-  messages?: CandidatureThreadMessage[] | null;
-  /** Chargement initial (si messages non fournis) */
-  loading?: boolean;
-  /** Label pour l’expéditeur “marque” (ex: nom de la marque) */
   brandLabel?: string;
-  /** Label pour l’expéditeur “boutique” (ex: nom du showroom) */
   showroomLabel?: string;
-  /** Si true, charge les messages en interne par candidature_id */
-  fetchByCandidature?: boolean;
-  /** Incrémenter pour forcer un refetch (ex: après envoi ou après action candidature) */
-  refreshKey?: number;
+  currentUserId: string | null;
 };
 
-const SELECT_COLS = 'id, candidature_id, sender_id, sender_role, content, is_read, created_at, type, metadata';
-
+/**
+ * Affiche le fil de messages unifié par conversation_id (même source que la messagerie).
+ */
 export function MessageList({
-  candidatureId,
+  brandId,
+  showroomId,
   viewerSide,
-  messages: controlledMessages,
-  loading: controlledLoading,
   brandLabel = 'Marque',
   showroomLabel = 'Boutique',
-  fetchByCandidature = true,
-  refreshKey = 0,
+  currentUserId,
 }: MessageListProps) {
-  const [internalMessages, setInternalMessages] = useState<CandidatureThreadMessage[]>([]);
-  const [internalLoading, setInternalLoading] = useState(fetchByCandidature);
-  const listEndRef = useRef<HTMLDivElement>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!fetchByCandidature || !candidatureId) {
-      setInternalLoading(false);
-      return;
-    }
     let cancelled = false;
-    setInternalLoading(true);
-    (async () => {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(SELECT_COLS)
-        .eq('candidature_id', candidatureId)
-        .order('created_at', { ascending: true });
-      if (!cancelled) {
-        if (error) setInternalMessages([]);
-        else setInternalMessages((data as CandidatureThreadMessage[]) ?? []);
-        setInternalLoading(false);
-      }
-    })();
+    getOrCreateConversationId(brandId, showroomId).then((id) => {
+      if (!cancelled) setConversationId(id);
+    });
     return () => { cancelled = true; };
-  }, [candidatureId, fetchByCandidature, refreshKey]);
+  }, [brandId, showroomId]);
 
-  useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [controlledMessages ?? internalMessages]);
+  const { messages, loading } = useChat(conversationId, currentUserId);
+  const myLabel = viewerSide === 'brand' ? brandLabel : showroomLabel;
+  const otherUserName = viewerSide === 'brand' ? showroomLabel : brandLabel;
 
-  const messages = controlledMessages ?? internalMessages;
-  const loading = controlledMessages != null ? controlledLoading : internalLoading;
+  if (conversationId == null) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" aria-hidden />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -78,31 +58,31 @@ export function MessageList({
     );
   }
 
-  if (!messages?.length) {
+  if (!messages.length) {
     return (
       <div className="py-6 text-center text-sm text-neutral-500">
-        Aucun message pour le moment. Les événements (offre envoyée, acceptée) s’afficheront ici.
+        Aucun message pour le moment. Les événements (offre envoyée, acceptée) s'afficheront ici.
       </div>
     );
   }
 
   return (
-    <div className="space-y-0">
-      {messages.map((msg) => (
-        <MessageItem
-          key={msg.id}
-          message={msg}
-          viewerSide={viewerSide}
-          senderLabel={
-            msg.sender_role === 'brand'
-              ? brandLabel
-              : msg.sender_role === 'boutique'
-                ? showroomLabel
-                : undefined
-          }
-        />
-      ))}
-      <div ref={listEndRef} />
+    <div className="space-y-4">
+      {messages.map((m) => {
+        const isMe =
+          m.sender_id != null && currentUserId != null && m.sender_id === currentUserId;
+        return (
+          <MessageEntry
+            key={m.id}
+            message={m}
+            isMe={isMe}
+            myLabel={myLabel}
+            otherUserName={otherUserName}
+            brandDisplayName={brandLabel}
+            showroomDisplayName={showroomLabel}
+          />
+        );
+      })}
     </div>
   );
 }

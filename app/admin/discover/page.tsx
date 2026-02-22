@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { getOrCreateConversationId } from '@/lib/conversations';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { Store, Loader2, Send, X, Info, MessageSquare } from 'lucide-react';
 import type { Showroom, ShowroomCommissionOption } from '@/lib/supabase';
 import { ContactShowroomButton } from '@/components/messaging/ContactShowroomButton';
+import { getCandidatureWindowStatus, getCandidatureDaysLeft, formatCandidaturePeriodLabel } from '@/app/admin/components/ShowroomFichePreview';
 
 function rentPeriodLabel(period: string | null): string {
   if (period === 'week') return '/sem.';
@@ -101,58 +103,58 @@ export default function DiscoverPage() {
     if (!hasOption && !hasNegotiation) return;
     setSubmitting(true);
     try {
-      const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString();
-      const { data: insertedCand, error } = await supabase
-        .from('candidatures')
-        .insert({
-          brand_id: activeBrand.id,
-          showroom_id: modalShowroom.id,
-          showroom_commission_option_id: hasOption ? selectedOptionId : null,
-          negotiation_message: hasNegotiation ? negotiationMessage.trim() : null,
-          message: motivationMessage.trim() || null,
-          status: 'pending',
-          validity_days: validityDays,
-          expires_at: expiresAt,
-        })
-        .select('id')
-        .single();
-      if (error || !insertedCand) {
+      const conversationId = await getOrCreateConversationId(activeBrand.id, modalShowroom.id);
+      if (!conversationId) {
         setSubmitting(false);
         return;
       }
-      const candidatureId = (insertedCand as { id: string }).id;
 
-      // Créer ou récupérer la conversation B2B pour que la demande apparaisse dans la messagerie côté boutique
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('brand_id', activeBrand.id)
-        .eq('showroom_id', modalShowroom.id)
-        .maybeSingle();
-      let conversationId: string | null = (existingConv as { id: string } | null)?.id ?? null;
-      if (!conversationId) {
-        const { data: insertedConv, error: convErr } = await supabase
-          .from('conversations')
-          .insert({ brand_id: activeBrand.id, showroom_id: modalShowroom.id })
-          .select('id')
-          .single();
-        if (!convErr && insertedConv) conversationId = (insertedConv as { id: string }).id;
+      const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString();
+      const metadata: Record<string, unknown> = {
+        status: 'pending',
+        validity_days: validityDays,
+        expires_at: expiresAt,
+      };
+      if (hasOption && modalCommissionOptions) {
+        const opt = modalCommissionOptions.find((o) => o.id === selectedOptionId);
+        if (opt) {
+          metadata.rent = opt.rent ?? undefined;
+          metadata.rent_period = opt.rent_period ?? 'month';
+          metadata.commission_percent = opt.commission_percent ?? undefined;
+          if (opt.description?.trim()) metadata.option_description = opt.description;
+        }
+      } else if (hasNegotiation) {
+        metadata.negotiation_message = negotiationMessage.trim();
       }
-      const firstMessage =
-        motivationMessage.trim() ||
+      // CANDIDATURE_SENT + optional CHAT below
+      void (null as unknown as string);
+      /**/
+      if (false)
         (hasNegotiation ? `Demande de candidature avec proposition : ${negotiationMessage.trim().slice(0, 200)}${negotiationMessage.trim().length > 200 ? '…' : ''}` : 'J’ai envoyé une demande de candidature pour exposer mes produits dans votre boutique.');
       await supabase.from('messages').insert({
-        candidature_id: candidatureId,
+        conversation_id: conversationId,
+        type: 'CANDIDATURE_SENT',
         sender_id: userId,
         sender_role: 'brand',
-        content: firstMessage,
-        type: 'user',
+        content: motivationMessage.trim() || null,
+        metadata,
         is_read: false,
       });
 
+      if (motivationMessage.trim()) {
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          type: 'CHAT',
+          sender_id: userId,
+          sender_role: 'brand',
+          content: motivationMessage.trim(),
+          is_read: false,
+        });
+      }
+
       setModalShowroom(null);
       setModalCommissionOptions(null);
-      router.push('/admin/placements');
+      router.push(`/messages?conversationId=${conversationId}`);
     } finally {
       setSubmitting(false);
     }
@@ -231,15 +233,40 @@ export default function DiscoverPage() {
                   ))
                 ) : null}
               </div>
+              {formatCandidaturePeriodLabel(s.candidature_open_from ?? undefined, s.candidature_open_to ?? undefined) && (
+                <p className="mt-2 text-xs text-neutral-500">
+                  {formatCandidaturePeriodLabel(s.candidature_open_from ?? undefined, s.candidature_open_to ?? undefined)}
+                </p>
+              )}
+              {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'open' && (() => {
+                const daysLeft = getCandidatureDaysLeft(s.candidature_open_to);
+                return daysLeft != null && daysLeft <= 7 && daysLeft >= 0 ? (
+                  <p className="mt-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-2.5 py-1.5">
+                    {daysLeft === 0 ? 'Dernier jour pour candidater' : daysLeft === 1 ? 'Plus qu’un jour avant la fin des candidatures' : `Plus que ${daysLeft} jours avant la fin des candidatures`}
+                  </p>
+                ) : null;
+              })()}
               <div className="mt-4 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => openModal(s)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
-                >
-                  <Send className="h-4 w-4" />
-                  Candidater
-                </button>
+                {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'open' ? (
+                  <button
+                    type="button"
+                    onClick={() => openModal(s)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
+                  >
+                    <Send className="h-4 w-4" />
+                    Candidater
+                  </button>
+                ) : (
+                  <div
+                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium ${
+                      getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'upcoming'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-neutral-200 text-neutral-500'
+                    }`}
+                  >
+                    {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'upcoming' ? 'À venir' : 'Terminé'}
+                  </div>
+                )}
                 <ContactShowroomButton
                   showroomId={s.id}
                   brandId={activeBrand.id}

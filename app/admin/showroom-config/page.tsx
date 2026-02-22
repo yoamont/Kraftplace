@@ -31,6 +31,8 @@ type FormSnapshot = {
   isPermanent: boolean;
   startDate: string;
   endDate: string;
+  candidatureOpenFrom: string;
+  candidatureOpenTo: string;
   publicationStatus: 'draft' | 'published';
   commissionOptions: CommissionOptionForm[];
 };
@@ -63,6 +65,8 @@ function snapshotFromShowroom(s: Showroom, options: ShowroomCommissionOption[]):
     isPermanent: s.is_permanent ?? true,
     startDate: s.start_date ?? '',
     endDate: s.end_date ?? '',
+    candidatureOpenFrom: s.candidature_open_from ?? '',
+    candidatureOpenTo: s.candidature_open_to ?? '',
     publicationStatus: s.publication_status ?? 'draft',
     commissionOptions: opts.slice(0, 3),
   };
@@ -92,6 +96,8 @@ export default function ShowroomConfigPage() {
   const [isPermanent, setIsPermanent] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [candidatureOpenFrom, setCandidatureOpenFrom] = useState('');
+  const [candidatureOpenTo, setCandidatureOpenTo] = useState('');
   const [publicationStatus, setPublicationStatus] = useState<'draft' | 'published'>('draft');
   const [commissionOptions, setCommissionOptions] = useState<CommissionOptionForm[]>([
     { rent: '', rentPeriod: 'month', commissionPercent: '', description: '' },
@@ -126,6 +132,8 @@ export default function ShowroomConfigPage() {
       setIsPermanent(snap.isPermanent);
       setStartDate(snap.startDate);
       setEndDate(snap.endDate);
+      setCandidatureOpenFrom(snap.candidatureOpenFrom);
+      setCandidatureOpenTo(snap.candidatureOpenTo);
       setPublicationStatus(snap.publicationStatus);
       setCommissionOptions(snap.commissionOptions);
       setLoading(false);
@@ -145,10 +153,12 @@ export default function ShowroomConfigPage() {
       isPermanent,
       startDate,
       endDate,
+      candidatureOpenFrom,
+      candidatureOpenTo,
       publicationStatus,
       commissionOptions,
     }),
-    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, isPermanent, startDate, endDate, publicationStatus, commissionOptions]
+    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, isPermanent, startDate, endDate, candidatureOpenFrom, candidatureOpenTo, publicationStatus, commissionOptions]
   );
 
   const hasChanges = useMemo(() => {
@@ -175,6 +185,8 @@ export default function ShowroomConfigPage() {
       initialSnapshot.isPermanent !== currentSnapshot.isPermanent ||
       initialSnapshot.startDate !== currentSnapshot.startDate ||
       initialSnapshot.endDate !== currentSnapshot.endDate ||
+      initialSnapshot.candidatureOpenFrom !== currentSnapshot.candidatureOpenFrom ||
+      initialSnapshot.candidatureOpenTo !== currentSnapshot.candidatureOpenTo ||
       initialSnapshot.publicationStatus !== currentSnapshot.publicationStatus
     );
   }, [initialSnapshot, currentSnapshot]);
@@ -270,6 +282,8 @@ export default function ShowroomConfigPage() {
           is_permanent: isPermanent,
           start_date: isPermanent ? null : startDate || null,
           end_date: isPermanent ? null : endDate || null,
+          candidature_open_from: candidatureOpenFrom.trim() || null,
+          candidature_open_to: candidatureOpenTo.trim() || null,
           publication_status: publicationStatus,
         })
         .eq('id', activeShowroom.id);
@@ -316,6 +330,8 @@ export default function ShowroomConfigPage() {
         isPermanent: isPermanent,
         startDate: startDate,
         endDate: endDate,
+        candidatureOpenFrom: candidatureOpenFrom,
+        candidatureOpenTo: candidatureOpenTo,
         publicationStatus: publicationStatus,
         commissionOptions: optsSnapshot.slice(0, 3),
       });
@@ -526,6 +542,20 @@ export default function ShowroomConfigPage() {
           </div>
         )}
         <div>
+          <h2 className="text-sm font-semibold text-neutral-900 mb-1">Ouverture des candidatures</h2>
+          <p className="text-xs text-neutral-500 mb-2">Période pendant laquelle les marques peuvent cliquer sur « Candidater ». Vide = toujours ouvert.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Date d’ouverture</label>
+              <input type="date" value={candidatureOpenFrom} onChange={(e) => setCandidatureOpenFrom(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Date de clôture</label>
+              <input type="date" value={candidatureOpenTo} onChange={(e) => setCandidatureOpenTo(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            </div>
+          </div>
+        </div>
+        <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1">Publication</label>
           <select value={publicationStatus} onChange={(e) => setPublicationStatus(e.target.value as 'draft' | 'published')} className="w-full max-w-[200px] px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900">
             <option value="draft">Brouillon</option>
@@ -565,6 +595,8 @@ export default function ShowroomConfigPage() {
             isPermanent={isPermanent}
             startDate={startDate}
             endDate={endDate}
+            candidatureOpenFrom={candidatureOpenFrom}
+            candidatureOpenTo={candidatureOpenTo}
             commissionOptions={commissionOptions}
           />
         </div>

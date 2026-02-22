@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { useAdminEntity } from '@/app/admin/context/AdminEntityContext';
 import { useConversations } from '@/lib/hooks/useConversations';
 import { ConversationList } from '@/app/admin/messaging/ConversationList';
@@ -29,9 +31,10 @@ export default function MessagesPage() {
   }, [conversationIdParam, refresh]);
 
   const selected = conversations.find((c) => c.id === selectedId);
-  /** ID utilisé pour charger les messages : candidature_id si disponible, sinon conversation_id (fallback) */
-  const activeMessageId = selected?.candidatureId ?? selectedId;
-  const messageMode = selected?.candidatureId ? ('candidature' as const) : ('conversation' as const);
+  const otherUser = selected
+    ? { name: selected.otherParty.name, avatarUrl: selected.otherParty.avatar_url }
+    : { name: '', avatarUrl: null as string | null };
+  const myLabel = activeBrand?.brand_name ?? activeShowroom?.name ?? 'Vous';
 
   useEffect(() => {
     if (!entityLoading && !userId) router.replace('/login');
@@ -55,16 +58,16 @@ export default function MessagesPage() {
     );
   }
 
-  const otherUser = selected
-    ? { name: selected.otherParty.name, avatarUrl: selected.otherParty.avatar_url }
-    : { name: '', avatarUrl: null as string | null };
-  const myLabel = activeBrand?.brand_name ?? activeShowroom?.name ?? 'Vous';
-
   return (
     <div className="flex h-screen w-full bg-white overflow-hidden">
-      {/* SIDEBAR */}
       <div className="w-1/3 lg:w-1/4 border-r border-neutral-200 h-full flex flex-col bg-neutral-50/50">
         <div className="shrink-0 p-3 border-b border-neutral-200 bg-white">
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 mb-2"
+          >
+            <ArrowLeft className="h-4 w-4" /> Retour
+          </Link>
           <h1 className="text-lg font-semibold text-neutral-900">Messagerie</h1>
           <p className="text-xs text-neutral-500 mt-0.5">
             {entityType === 'brand'
@@ -87,18 +90,17 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* CHAT VIEW : header + messages + input (hauteurs fixes, pas d'imbrication flex fragile) */}
       <div className="flex-1 flex flex-col h-full relative min-w-0">
         <ChatView
+          key={selectedId ?? 'none'}
           conversationId={selectedId}
-          candidatureId={selected?.candidatureId ?? null}
-          activeMessageId={activeMessageId}
-          messageMode={messageMode}
           currentUserId={userId}
           entityType={entityType ?? null}
           otherUserName={otherUser.name}
           otherUserAvatarUrl={otherUser.avatarUrl}
           myLabel={myLabel}
+          brandId={selected?.brand_id}
+          showroomId={selected?.showroom_id}
         />
       </div>
     </div>

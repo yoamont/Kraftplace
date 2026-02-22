@@ -6,6 +6,7 @@ import { X, Loader2, Sparkles, Store, Send, Pencil, CheckCircle, XCircle, Handsh
 import type { Candidature, ShowroomCommissionOption } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { MessageList } from './MessageList';
+import { getOrCreateConversationId } from '@/lib/conversations';
 
 type BrandRow = { id: number; brand_name: string; owner_id: string; avatar_url?: string | null };
 type ShowroomRow = { id: number; name: string; owner_id: string; avatar_url?: string | null };
@@ -47,6 +48,7 @@ export function CandidatureDetailModal({
   const [sendingMessage, setSendingMessage] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [messageListKey, setMessageListKey] = useState(0);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fetchCandidature = useCallback(async () => {
     const [candRes, brandRes, showroomRes] = await Promise.all([
@@ -75,6 +77,12 @@ export function CandidatureDetailModal({
     setBrandRow(b ?? null);
     setShowroomRow(s ?? null);
   }, [candidature.id, candidature.brand_id, candidature.showroom_id, candidature.showroom, candidature.brand, candidature.option]);
+
+  useEffect(() => {
+    getOrCreateConversationId(candidature.brand_id, candidature.showroom_id).then((id) => {
+      setConversationId(id ?? null);
+    });
+  }, [candidature.brand_id, candidature.showroom_id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,17 +146,17 @@ export function CandidatureDetailModal({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId || !messageBody.trim() || sendingMessage || status !== 'pending') return;
+    if (!userId || !messageBody.trim() || sendingMessage || status !== 'pending' || !conversationId) return;
     const trimmed = messageBody.trim();
     setSendingMessage(true);
     try {
-      const senderRole: 'brand' | 'boutique' = viewerSide === 'brand' ? 'brand' : 'boutique';
+      const senderRole = viewerSide === 'brand' ? 'brand' : 'boutique';
       const { error } = await supabase.from('messages').insert({
-        candidature_id: c.id,
+        conversation_id: conversationId,
+        type: 'CHAT',
         sender_id: userId,
         sender_role: senderRole,
         content: trimmed,
-        type: 'user',
         is_read: false,
       });
       if (!error) {
@@ -281,14 +289,15 @@ export function CandidatureDetailModal({
                 )}
               </div>
 
-              {/* Fil de messages unifié */}
+              {/* Fil de messages unifié (même source que /messages) */}
               <div className="flex-1 overflow-y-auto min-h-0 p-4">
                 <MessageList
-                  candidatureId={c.id}
+                  brandId={c.brand_id}
+                  showroomId={c.showroom_id}
                   viewerSide={viewerSide}
                   brandLabel={c.brand?.brand_name ?? 'Marque'}
                   showroomLabel={c.showroom?.name ?? 'Boutique'}
-                  refreshKey={messageListKey}
+                  currentUserId={userId}
                 />
               </div>
 

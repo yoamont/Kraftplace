@@ -36,6 +36,9 @@ export type Showroom = {
   is_permanent: boolean | null;
   start_date: string | null;
   end_date: string | null;
+  /** Période d'ouverture des candidatures : le bouton Candidater n'est actif qu'entre ces deux dates (inclus). Null = pas de restriction. */
+  candidature_open_from: string | null;
+  candidature_open_to: string | null;
   publication_status: 'draft' | 'published';
 };
 
@@ -106,12 +109,33 @@ export type CandidatureMessage = {
 /** @deprecated Table conversation_messages supprimée ; utiliser Message (table messages) avec conversation_id. */
 // export type ConversationMessage = { id: string; brand_id: number; showroom_id: number; sender_id: string; body: string; created_at: string | null; };
 
-// ——— Messagerie B2B (conversations + messages) ———
+// ——— Messagerie unifiée par événements (conversations + messages) ———
 export type Conversation = {
   id: string;
   brand_id: number;
   showroom_id: number;
   updated_at: string | null;
+};
+
+/** Types d'événements du journal messages (une seule table, une seule clé conversation_id). */
+export type UnifiedMessageType =
+  | 'CHAT'
+  | 'DEAL_SENT' | 'DEAL_ACCEPTED' | 'DEAL_DECLINED' | 'DEAL_EXPIRED'
+  | 'CANDIDATURE_SENT' | 'OFFER_NEGOTIATED' | 'CANDIDATURE_ACCEPTED' | 'CANDIDATURE_REFUSED'
+  | 'CONTRAT' | 'PAYMENT_REQUEST' | 'DOCUMENT';
+
+export type UnifiedMessage = {
+  id: string;
+  conversation_id: string;
+  created_at: string | null;
+  updated_at: string | null;
+  type: UnifiedMessageType;
+  sender_id: string | null;
+  /** 'brand' | 'boutique' pour afficher qui envoie (évite confusion dans le fil) */
+  sender_role: 'brand' | 'boutique' | null;
+  content: string | null;
+  metadata: Record<string, unknown>;
+  is_read: boolean;
 };
 
 /** 'chat' = message classique ; 'candidature_action' = action système (négociation, acceptée, etc.) */

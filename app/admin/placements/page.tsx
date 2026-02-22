@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
-import { Loader2, MessageSquare, Package, Store, Pencil, X, Send } from 'lucide-react';
-import type { Placement, Product, Showroom, Candidature, ShowroomCommissionOption, Message } from '@/lib/supabase';
+import { Loader2, MessageSquare, Package, Store, Pencil, X, Send, Calendar, Filter } from 'lucide-react';
+import type { Placement, Product, Showroom, Candidature, ShowroomCommissionOption } from '@/lib/supabase';
 import { getOrCreateConversationId } from '@/lib/conversations';
 import { getStatusDisplayLabel, getInitiatorBadgeLabel } from '@/lib/placements';
 import { CandidatureDetailModal } from '../components/CandidatureDetailModal';
@@ -52,8 +52,12 @@ export default function PlacementsListPage() {
   const [editError, setEditError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [detailCandidature, setDetailCandidature] = useState<CandidatureWithDetails | null>(null);
-  const [lastMessageByThreadId, setLastMessageByThreadId] = useState<Record<string, Message>>({});
-  const [lastMessageByCandidatureId, setLastMessageByCandidatureId] = useState<Record<string, Message>>({});
+  const [lastMessageByCandidatureId, setLastMessageByCandidatureId] = useState<Record<string, { content: string | null; created_at: string | null }>>({});
+  // Filtres (côté marque)
+  const [filterPeriod, setFilterPeriod] = useState<'7' | '30' | '90' | 'all' | 'custom'>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterShowroomIds, setFilterShowroomIds] = useState<number[]>([]);
 
   const handleGoToMessaging = async (brandId: number, showroomId: number) => {
     setMessagingNavigating(true);
@@ -118,26 +122,7 @@ export default function PlacementsListPage() {
       setPlacements(placementsWithDetails);
       setCandidatures(candidaturesResult);
 
-      const byShowroomList = placementList.reduce((acc, p) => {
-        if (!acc[p.showroom_id]) acc[p.showroom_id] = [];
-        acc[p.showroom_id].push(p);
-        return acc;
-      }, {} as Record<number, Placement[]>);
-      const threadIds = Object.values(byShowroomList).map((arr) => {
-        const sorted = [...arr].sort((a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime());
-        return sorted[0].id;
-      });
-      const messagesRes =
-        threadIds.length > 0
-          ? await supabase.from('messages').select('id, conversation_id, sender_id, sender_role, content, is_read, created_at, message_type, placement_id').in('placement_id', threadIds).order('created_at', { ascending: false })
-          : { data: [] as Message[] };
-      const threadMsgs = (messagesRes.data as Message[]) ?? [];
-      const lastByThread: Record<string, Message> = {};
-      threadMsgs.forEach((m) => {
-        if (m.placement_id && !lastByThread[m.placement_id]) lastByThread[m.placement_id] = m;
-      });
-
-      let lastByCandidature: Record<string, Message> = {};
+      let lastByCandidature: Record<string, { content: string | null; created_at: string | null }> = {};
       if (candidaturesResult.length > 0) {
         const uniquePairs = [...new Set(candidaturesResult.map((c) => `${c.brand_id}-${c.showroom_id}`))];
         const resolvedConvIds = await Promise.all(
@@ -155,13 +140,13 @@ export default function PlacementsListPage() {
         if (convIdsFiltered.length > 0) {
           const { data: msgRows } = await supabase
             .from('messages')
-            .select('id, conversation_id, content, created_at, message_type')
+            .select('id, conversation_id, content, created_at')
             .in('conversation_id', convIdsFiltered)
             .order('created_at', { ascending: false });
-          const msgs = (msgRows as Message[]) ?? [];
-          const lastByConvId: Record<string, Message> = {};
+          const msgs = (msgRows as { id: string; conversation_id: string; content: string | null; created_at: string | null }[]) ?? [];
+          const lastByConvId: Record<string, { content: string | null; created_at: string | null }> = {};
           msgs.forEach((m) => {
-            if (!lastByConvId[m.conversation_id]) lastByConvId[m.conversation_id] = m;
+            if (!lastByConvId[m.conversation_id]) lastByConvId[m.conversation_id] = { content: m.content, created_at: m.created_at };
           });
           candidaturesResult.forEach((c) => {
             const convId = pairToConvId.get(`${c.brand_id}-${c.showroom_id}`);
@@ -169,13 +154,39 @@ export default function PlacementsListPage() {
           });
         }
       }
-      setLastMessageByThreadId(lastByThread);
       setLastMessageByCandidatureId(lastByCandidature);
       setLoading(false);
     })();
   }, [entityType, activeBrand?.id]);
 
-  const byShowroom = placements.reduce((acc, p) => {
+  const now = Date.now();
+  const periodMs = filterPeriod === 'all' || filterPeriod === 'custom' ? 0 : parseInt(filterPeriod, 10) * 24 * 60 * 60 * 1000;
+  const inPeriod = (createdAt: string | null) => {
+    if (!createdAt) return true;
+    const t = new Date(createdAt).getTime();
+    if (filterPeriod === 'custom') {
+      if (filterDateFrom.trim()) {
+        const from = new Date(filterDateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (t < from.getTime()) return false;
+      }
+      if (filterDateTo.trim()) {
+        const to = new Date(filterDateTo);
+        to.setHours(23, 59, 59, 999);
+        if (t > to.getTime()) return false;
+      }
+      return true;
+    }
+    if (periodMs > 0 && now - t > periodMs) return false;
+    return true;
+  };
+  const inShowroomFilter = (showroomId: number) =>
+    filterShowroomIds.length === 0 || filterShowroomIds.includes(showroomId);
+
+  const filteredPlacements = placements.filter((p) => inPeriod(p.created_at) && inShowroomFilter(p.showroom_id));
+  const filteredCandidatures = candidatures.filter((c) => inPeriod(c.created_at) && inShowroomFilter(c.showroom_id));
+
+  const byShowroom = filteredPlacements.reduce((acc, p) => {
     const sid = p.showroom_id;
     if (!acc[sid]) acc[sid] = { showroom: p.showroom, placements: [] as PlacementWithDetails[] };
     acc[sid].placements.push(p);
@@ -190,14 +201,22 @@ export default function PlacementsListPage() {
       return nameA.localeCompare(nameB);
     });
 
-  const showroomIdsWithCandidaturesOnly = [...new Set(candidatures.map((c) => c.showroom_id))].filter(
+  const showroomIdsWithCandidaturesOnly = [...new Set(filteredCandidatures.map((c) => c.showroom_id))].filter(
     (sid) => !byShowroom[sid]?.placements?.length
   );
   showroomIdsWithCandidaturesOnly.sort((a, b) => {
-    const nameA = candidatures.find((c) => c.showroom_id === a)?.showroom?.name ?? '';
-    const nameB = candidatures.find((c) => c.showroom_id === b)?.showroom?.name ?? '';
+    const nameA = filteredCandidatures.find((c) => c.showroom_id === a)?.showroom?.name ?? '';
+    const nameB = filteredCandidatures.find((c) => c.showroom_id === b)?.showroom?.name ?? '';
     return nameA.localeCompare(nameB);
   });
+
+  const allShowroomIds = [...new Set([...placements.map((p) => p.showroom_id), ...candidatures.map((c) => c.showroom_id)])];
+  const showroomEntries = allShowroomIds
+    .map((id) => {
+      const name = placements.find((p) => p.showroom_id === id)?.showroom?.name ?? candidatures.find((c) => c.showroom_id === id)?.showroom?.name ?? `Boutique ${id}`;
+      return { id, name };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   function getOfferThreadPlacementId(showroomPlacements: PlacementWithDetails[]): string {
     const sorted = [...showroomPlacements].sort(
@@ -317,11 +336,72 @@ export default function PlacementsListPage() {
   }
 
   const hasAny = placements.length > 0 || candidatures.length > 0;
+  const hasAnyFiltered = showroomIdsWithPlacements.length > 0 || showroomIdsWithCandidaturesOnly.length > 0;
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-neutral-900">Messagerie</h1>
-      <p className="mt-1 text-sm text-neutral-500">Candidatures et offres par boutique. Ouvrez la négociation pour discuter, accepter, refuser ou faire une contre-offre.</p>
+      <h1 className="text-xl font-semibold text-neutral-900">Mes partenariats</h1>
+
+      {hasAny && (
+        <section className="flex flex-col sm:flex-row sm:items-center gap-4 my-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+          <div className="flex items-center gap-2 shrink-0">
+            <Calendar className="h-4 w-4 text-neutral-500" />
+            <span className="text-sm font-medium text-neutral-700">Période</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['7', '30', '90', 'all', 'custom'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setFilterPeriod(p)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterPeriod === p ? 'bg-neutral-900 text-white' : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'}`}
+              >
+                {p === 'all' ? 'Tout' : p === 'custom' ? 'Personnalisé' : `${p} jours`}
+              </button>
+            ))}
+            {filterPeriod === 'custom' && (
+              <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <span className="text-neutral-600">Du</span>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="px-2 py-1.5 rounded border border-neutral-200 bg-white text-neutral-900"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-neutral-600">au</span>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="px-2 py-1.5 rounded border border-neutral-200 bg-white text-neutral-900"
+                  />
+                </label>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0 sm:ml-4">
+            <Filter className="h-4 w-4 text-neutral-500" />
+            <span className="text-sm font-medium text-neutral-700">Boutique</span>
+          </div>
+          <select
+            value={filterShowroomIds.length === 0 ? '' : String(filterShowroomIds[0])}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (!v) setFilterShowroomIds([]);
+              else setFilterShowroomIds([Number(v)]);
+            }}
+            className="px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm min-w-[160px]"
+          >
+            <option value="">Toutes</option>
+            {showroomEntries.map(({ id, name }) => (
+              <option key={id} value={String(id)}>{name}</option>
+            ))}
+          </select>
+        </section>
+      )}
 
       {!hasAny && (
         <div className="mt-8 p-8 rounded-xl border border-neutral-200 bg-white text-center text-neutral-500">
@@ -331,7 +411,11 @@ export default function PlacementsListPage() {
         </div>
       )}
 
-      {showroomIdsWithPlacements.length > 0 && (
+      {hasAny && !hasAnyFiltered && (
+        <p className="mt-6 text-center text-neutral-500">Aucun partenariat ne correspond aux filtres.</p>
+      )}
+
+      {hasAnyFiltered && showroomIdsWithPlacements.length > 0 && (
         <div className="mt-8 space-y-6">
           {showroomIdsWithPlacements.map((showroomId) => {
             const { showroom, placements: showroomPlacements } = byShowroom[showroomId];
@@ -353,12 +437,6 @@ export default function PlacementsListPage() {
                   <span className="text-sm text-neutral-500 shrink-0">
                     {showroomPlacements.length} produit{showroomPlacements.length > 1 ? 's' : ''}
                   </span>
-                  {lastMessageByThreadId[offerLinkId] && (
-                    <p className="w-full text-sm text-neutral-600 truncate mt-1">
-                      Dernier message : {lastMessageByThreadId[offerLinkId].content.slice(0, 80)}
-                      {lastMessageByThreadId[offerLinkId].content.length > 80 ? '…' : ''}
-                    </p>
-                  )}
                   <button
                     type="button"
                     onClick={() => activeBrand && handleGoToMessaging(activeBrand.id, showroomId)}
@@ -393,10 +471,10 @@ export default function PlacementsListPage() {
         </div>
       )}
 
-      {showroomIdsWithCandidaturesOnly.length > 0 && (
+      {hasAnyFiltered && showroomIdsWithCandidaturesOnly.length > 0 && (
         <div className={`space-y-6 ${showroomIdsWithPlacements.length > 0 ? 'mt-8' : 'mt-8'}`}>
           {showroomIdsWithCandidaturesOnly.map((showroomId) => {
-            const showroomCandidatures = candidatures.filter((c) => c.showroom_id === showroomId);
+            const showroomCandidatures = filteredCandidatures.filter((c) => c.showroom_id === showroomId);
             const latest = showroomCandidatures[0];
             const showroom = latest?.showroom;
             return (
@@ -456,10 +534,10 @@ export default function PlacementsListPage() {
                           {c.status === 'expired' && c.expires_at && (
                             <p className="mt-1 text-xs text-neutral-500">Expirée le {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {lastMessageByCandidatureId[c.id] && (
+                          {lastMessageByCandidatureId[c.id]?.content && (
                             <p className="mt-2 text-sm text-neutral-600 truncate">
-                              Dernier message : {lastMessageByCandidatureId[c.id].content.slice(0, 80)}
-                              {lastMessageByCandidatureId[c.id].content.length > 80 ? '…' : ''}
+                              Dernier message : {lastMessageByCandidatureId[c.id].content!.slice(0, 80)}
+                              {lastMessageByCandidatureId[c.id].content!.length > 80 ? '…' : ''}
                             </p>
                           )}
                         </div>

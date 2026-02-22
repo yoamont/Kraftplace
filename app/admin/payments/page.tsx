@@ -52,6 +52,15 @@ function formatAmount(cents: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }
 
+function formatPaymentDate(isoDate: string | null): string {
+  if (!isoDate) return '—';
+  try {
+    return new Date(isoDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
+
 /** Affiche un lien vers la pièce jointe (URL publique ou signée si bucket privé). */
 function AttachmentLink({ pathOrUrl, label }: { pathOrUrl: string; label: string }) {
   const [href, setHref] = useState<string | null>(pathOrUrl.startsWith('http') ? pathOrUrl : null);
@@ -128,7 +137,9 @@ export default function PaymentsPage() {
   }, [manualSearch]);
 
   // Filtres résumé / liste
-  const [filterPeriod, setFilterPeriod] = useState<'7' | '30' | '90' | 'all'>('all');
+  const [filterPeriod, setFilterPeriod] = useState<'7' | '30' | '90' | 'all' | 'custom'>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [filterCounterpartIds, setFilterCounterpartIds] = useState<number[]>([]);
 
   // Modal: accepter / contester (marque)
@@ -824,9 +835,23 @@ export default function PaymentsPage() {
   counterpartEntries.sort((a, b) => a.name.localeCompare(b.name));
 
   const now = Date.now();
-  const periodMs = filterPeriod === 'all' ? 0 : parseInt(filterPeriod, 10) * 24 * 60 * 60 * 1000;
+  const periodMs = filterPeriod === 'all' || filterPeriod === 'custom' ? 0 : parseInt(filterPeriod, 10) * 24 * 60 * 60 * 1000;
   const filteredList = list.filter((r) => {
-    if (periodMs > 0 && r.created_at) {
+    if (filterPeriod === 'custom') {
+      if (filterDateFrom.trim() || filterDateTo.trim()) {
+        const created = r.created_at ? new Date(r.created_at).getTime() : 0;
+        if (filterDateFrom.trim()) {
+          const from = new Date(filterDateFrom);
+          from.setHours(0, 0, 0, 0);
+          if (created < from.getTime()) return false;
+        }
+        if (filterDateTo.trim()) {
+          const to = new Date(filterDateTo);
+          to.setHours(23, 59, 59, 999);
+          if (created > to.getTime()) return false;
+        }
+      }
+    } else if (periodMs > 0 && r.created_at) {
       const t = new Date(r.created_at).getTime();
       if (now - t > periodMs) return false;
     }
@@ -836,6 +861,15 @@ export default function PaymentsPage() {
     }
     return true;
   });
+
+  const periodLabel =
+    filterPeriod === 'all'
+      ? ''
+      : filterPeriod === 'custom'
+        ? filterDateFrom || filterDateTo
+          ? `du ${filterDateFrom ? formatPaymentDate(filterDateFrom) : '…'} au ${filterDateTo ? formatPaymentDate(filterDateTo) : '…'}`
+          : 'Période personnalisée'
+        : `(${filterPeriod} derniers jours)`;
 
   const settledStatuses = ['accepted', 'completed'];
   const receivedTotal = filteredList
@@ -887,6 +921,12 @@ export default function PaymentsPage() {
           <p className={`mt-1 text-xl font-semibold ${netTotal >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatAmount(netTotal)}</p>
           <p className="text-xs text-neutral-500 mt-0.5">Reçus − Envoyés</p>
         </div>
+        {periodLabel && (
+          <p className="col-span-full text-xs text-neutral-500 mt-1 flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            {periodLabel}
+          </p>
+        )}
       </section>
 
       {/* Filtres période + marques/boutiques */}
@@ -895,17 +935,39 @@ export default function PaymentsPage() {
           <Calendar className="h-4 w-4 text-neutral-500" />
           <span className="text-sm font-medium text-neutral-700">Période</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {(['7', '30', '90', 'all'] as const).map((p) => (
+        <div className="flex flex-wrap items-center gap-2">
+          {(['7', '30', '90', 'all', 'custom'] as const).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setFilterPeriod(p)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterPeriod === p ? 'bg-neutral-900 text-white' : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'}`}
             >
-              {p === 'all' ? 'Tout' : `${p} jours`}
+              {p === 'all' ? 'Tout' : p === 'custom' ? 'Personnalisé' : `${p} jours`}
             </button>
           ))}
+          {filterPeriod === 'custom' && (
+            <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+              <label className="flex items-center gap-1.5">
+                <span className="text-neutral-600">Du</span>
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  className="px-2 py-1.5 rounded border border-neutral-200 bg-white text-neutral-900"
+                />
+              </label>
+              <label className="flex items-center gap-1.5">
+                <span className="text-neutral-600">au</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="px-2 py-1.5 rounded border border-neutral-200 bg-white text-neutral-900"
+                />
+              </label>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0 sm:ml-4">
           <Filter className="h-4 w-4 text-neutral-500" />
@@ -974,6 +1036,7 @@ export default function PaymentsPage() {
                     <p className="font-medium text-neutral-900">
                       {r.placement?.product?.product_name ?? 'Produit'} · {r.placement?.showroom?.name ?? 'Boutique'}
                     </p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{formatPaymentDate(r.created_at)}</p>
                     <p className="text-sm text-neutral-600 mt-1">
                       La contrepartie recevra {formatAmount(r.amount_cents)}. Frais de service en supplément : {formatAmount(r.platform_fee_cents)} (à la charge de la boutique, pour soutenir la plateforme).
                     </p>
@@ -1017,6 +1080,7 @@ export default function PaymentsPage() {
                     <p className="font-medium text-neutral-900">
                       {r.candidature?.brand?.brand_name ?? r.counterpartBrand?.brand_name ?? 'Marque'} · Loyer
                     </p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{formatPaymentDate(r.created_at)}</p>
                     <p className="text-sm text-neutral-600 mt-1">Vous recevrez {formatAmount(r.amount_cents)}. Des frais de service s&apos;ajoutent au moment du paiement pour soutenir la plateforme.</p>
                     {r.motif && <p className="text-sm text-neutral-700 mt-1">Motif : {r.motif}</p>}
                     {r.sales_report_attachment_url && <AttachmentLink pathOrUrl={r.sales_report_attachment_url} label="Pièce jointe" />}
@@ -1053,6 +1117,7 @@ export default function PaymentsPage() {
                     <span className="text-xs font-medium text-neutral-500 uppercase">
                       {r.type === 'sales' ? 'Ventes' : 'Loyer'} · {r.initiator_side === 'brand' ? 'Demandé par la marque' : 'Demandé par la boutique'}
                     </span>
+                    <p className="text-xs text-neutral-500 mt-0.5">{formatPaymentDate(r.created_at)}</p>
                     <p className="font-medium text-neutral-900 mt-0.5">
                       {r.type === 'sales'
                         ? `${r.placement?.product?.product_name ?? '—'} · ${r.placement?.showroom?.name ?? '—'}`

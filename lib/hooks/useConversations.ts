@@ -2,26 +2,66 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Conversation, Brand, Showroom } from '@/lib/supabase';
+import type { Brand, Showroom } from '@/lib/supabase';
 
-export type ConversationWithDetails = Conversation & {
-  /** Candidature utilisée pour charger les messages (fil par candidature) */
-  candidatureId: string | null;
-  lastMessage: { content: string; created_at: string | null } | null;
-  unreadCount: number;
-  /** Interlocuteur : nom et avatar (jointure brands / showrooms, pas de table users) */
+/** Une conversation avec dernier message (vue conversations_with_last_message). */
+export type ConversationWithDetails = {
+  id: string;
+  brand_id: number;
+  showroom_id: number;
+  updated_at: string | null;
   otherParty: { name: string; avatar_url: string | null; id: number };
+  lastMessage: { content: string; created_at: string | null; type?: string } | null;
+  unreadCount: number;
   mySide: 'brand' | 'showroom';
 };
 
-type Row = Conversation & {
-  brands: { brand_name: string | null; avatar_url: string | null } | null;
-  showrooms: { name: string | null; avatar_url: string | null } | null;
+type ViewRow = {
+  id: string;
+  brand_id: number;
+  showroom_id: number;
+  updated_at: string | null;
+  brand_name: string | null;
+  brand_avatar_url: string | null;
+  showroom_name: string | null;
+  showroom_avatar_url: string | null;
+  last_message_id: string | null;
+  last_message_type: string | null;
+  last_message_content: string | null;
+  last_message_at: string | null;
+  last_message_metadata: Record<string, unknown> | null;
 };
 
+function lastMessageLabel(type: string | null, content: string | null): string {
+  if (content?.trim()) return content;
+  switch (type) {
+    case 'DEAL_SENT':
+      return 'Offre envoyée';
+    case 'DEAL_ACCEPTED':
+      return 'Offre acceptée';
+    case 'DEAL_DECLINED':
+      return 'Offre refusée';
+    case 'CANDIDATURE_SENT':
+      return 'Candidature envoyée';
+    case 'OFFER_NEGOTIATED':
+      return 'Proposition mise à jour';
+    case 'CANDIDATURE_ACCEPTED':
+      return 'Candidature acceptée';
+    case 'CANDIDATURE_REFUSED':
+      return 'Candidature refusée';
+    case 'CONTRAT':
+      return 'Contrat';
+    case 'PAYMENT_REQUEST':
+      return 'Demande de paiement';
+    case 'DOCUMENT':
+      return 'Document partagé';
+    default:
+      return 'Aucun message';
+  }
+}
+
 /**
- * Liste des conversations où l'utilisateur connecté est participant (propriétaire du brand ou du showroom).
- * Un seul SELECT sur conversations avec jointures brands + showrooms pour le nom/avatar de l'interlocuteur.
+ * Sidebar : lit la vue conversations_with_last_message (même source que le chat → 0% désync).
  */
 export function useConversations(
   userId: string | null,
@@ -44,10 +84,8 @@ export function useConversations(
 
     try {
       let query = supabase
-        .from('conversations')
-        .select(
-          'id, brand_id, showroom_id, updated_at, brands(brand_name, avatar_url), showrooms(name, avatar_url)'
-        )
+        .from('conversations_with_last_message')
+        .select('*')
         .order('updated_at', { ascending: false });
 
       if (activeBrand) {
@@ -68,93 +106,42 @@ export function useConversations(
         return;
       }
 
-      const list = (rows as unknown as Row[]) ?? [];
-      if (list.length === 0) {
-        setConversations([]);
-        setLoading(false);
-        return;
+      const list = (rows as ViewRow[]) ?? [];
+      const convIds = list.map((r) => r.id);
+      let unreadByConv: Record<string, number> = {};
+      if (convIds.length > 0) {
+        const { data: unreadRows } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', convIds)
+          .eq('is_read', false)
+          .not('sender_id', 'eq', userId);
+        const rows = (unreadRows as { conversation_id: string }[]) ?? [];
+        rows.forEach((r) => {
+          unreadByConv[r.conversation_id] = (unreadByConv[r.conversation_id] ?? 0) + 1;
+        });
       }
-
-      // Résoudre la dernière candidature par (brand_id, showroom_id) pour charger les messages par candidature_id
-      type CandRow = { id: string; brand_id: number; showroom_id: number; created_at: string | null };
-      let candRows: CandRow[] = [];
-      if (activeBrand) {
-        const showroomIds = list.map((c) => c.showroom_id);
-        const { data: cands } = await supabase
-          .from('candidatures')
-          .select('id, brand_id, showroom_id, created_at')
-          .eq('brand_id', activeBrand.id)
-          .in('showroom_id', showroomIds)
-          .order('created_at', { ascending: false });
-        candRows = (cands as CandRow[]) ?? [];
-      } else if (activeShowroom) {
-        const brandIds = list.map((c) => c.brand_id);
-        const { data: cands } = await supabase
-          .from('candidatures')
-          .select('id, brand_id, showroom_id, created_at')
-          .eq('showroom_id', activeShowroom.id)
-          .in('brand_id', brandIds)
-          .order('created_at', { ascending: false });
-        candRows = (cands as CandRow[]) ?? [];
-      }
-      const pairToCandidatureId = new Map<string, string>();
-      for (const cand of candRows) {
-        const key = `${cand.brand_id}-${cand.showroom_id}`;
-        if (!pairToCandidatureId.has(key)) pairToCandidatureId.set(key, cand.id);
-      }
-
-      const candidatureIds = [...pairToCandidatureId.values()];
-      const [allMessagesRes, unreadRes] = await Promise.all([
-        candidatureIds.length > 0
-          ? supabase
-              .from('messages')
-              .select('candidature_id, content, created_at')
-              .in('candidature_id', candidatureIds)
-              .order('created_at', { ascending: false })
-          : { data: [] as { candidature_id: string; content: string | null; created_at: string | null }[] },
-        candidatureIds.length > 0 && userId
-          ? supabase
-              .from('messages')
-              .select('candidature_id')
-              .in('candidature_id', candidatureIds)
-              .eq('is_read', false)
-              .neq('sender_id', userId)
-          : { data: [] as { candidature_id: string }[] },
-      ]);
-
-      const lastByCandidatureId: Record<string, { content: string; created_at: string | null }> = {};
-      for (const m of allMessagesRes.data ?? []) {
-        const cid = (m as { candidature_id: string }).candidature_id;
-        if (cid && !lastByCandidatureId[cid]) {
-          const content = (m as { content: string | null }).content;
-          lastByCandidatureId[cid] = {
-            content: content ?? '',
-            created_at: (m as { created_at: string | null }).created_at,
-          };
-        }
-      }
-      const unreadByCandidatureId: Record<string, number> = {};
-      for (const r of unreadRes.data ?? []) {
-        const cid = (r as { candidature_id: string }).candidature_id;
-        if (cid) unreadByCandidatureId[cid] = (unreadByCandidatureId[cid] ?? 0) + 1;
-      }
-
       const mySide: 'brand' | 'showroom' = activeBrand ? 'brand' : 'showroom';
-      const withDetails: ConversationWithDetails[] = list.map((c) => {
-        const candidatureId = pairToCandidatureId.get(`${c.brand_id}-${c.showroom_id}`) ?? null;
-        const otherParty =
+      const withDetails: ConversationWithDetails[] = list.map((row) => ({
+        id: row.id,
+        brand_id: row.brand_id,
+        showroom_id: row.showroom_id,
+        updated_at: row.updated_at,
+        otherParty:
           mySide === 'brand'
-            ? (c.showrooms && { name: c.showrooms.name ?? 'Boutique', avatar_url: c.showrooms.avatar_url, id: c.showroom_id })
-            : (c.brands && { name: c.brands.brand_name ?? 'Créateur', avatar_url: c.brands.avatar_url, id: c.brand_id });
-        return {
-          ...c,
-          candidatureId,
-          lastMessage: candidatureId ? lastByCandidatureId[candidatureId] ?? null : null,
-          unreadCount: candidatureId ? unreadByCandidatureId[candidatureId] ?? 0 : 0,
-          otherParty: otherParty ?? { name: mySide === 'brand' ? 'Boutique' : 'Créateur', avatar_url: null, id: mySide === 'brand' ? c.showroom_id : c.brand_id },
-          mySide,
-        };
-      });
+            ? { name: row.showroom_name ?? 'Boutique', avatar_url: row.showroom_avatar_url, id: row.showroom_id }
+            : { name: row.brand_name ?? 'Marque', avatar_url: row.brand_avatar_url, id: row.brand_id },
+        lastMessage:
+          row.last_message_id != null
+            ? {
+                content: lastMessageLabel(row.last_message_type, row.last_message_content),
+                created_at: row.last_message_at,
+                type: row.last_message_type ?? undefined,
+              }
+            : null,
+        unreadCount: unreadByConv[row.id] ?? 0,
+        mySide,
+      }));
 
       setConversations(withDetails);
     } catch (err) {
@@ -167,6 +154,12 @@ export function useConversations(
 
   useEffect(() => {
     fetchConversations();
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    const onVisible = () => fetchConversations();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchConversations]);
 
   return { conversations, loading, error, refresh: fetchConversations };

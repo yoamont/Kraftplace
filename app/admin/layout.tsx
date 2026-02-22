@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard } from 'lucide-react';
 import { AdminEntityProvider, useAdminEntity } from './context/AdminEntityContext';
+import { useUnreadMessagesCount } from '@/lib/hooks/useUnreadMessagesCount';
 import { MessengerPanelProvider } from './context/MessengerPanelContext';
 import { MessengerPanel } from './components/MessengerPanel';
 import { EntitySelector } from './components/EntitySelector';
@@ -15,7 +16,8 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const { userId, entityType, brands, showrooms, loading } = useAdminEntity();
+  const { userId, entityType, brands, showrooms, loading, activeBrand, activeShowroom } = useAdminEntity();
+  const { unreadCount: unreadMessagesCount } = useUnreadMessagesCount(userId, activeBrand ?? null, activeShowroom ?? null);
 
   useEffect(() => {
     if (!userId) {
@@ -45,7 +47,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin/brand-config', label: 'Ma marque', icon: Building2 },
     { href: '/admin/products', label: 'Mon Catalogue', icon: Package },
     { href: '/admin/discover', label: 'Vendre mes produits', icon: Store },
-    { href: '/admin/placements', label: 'Mes demandes', icon: LayoutGrid },
+    { href: '/admin/placements', label: 'Mes partenariats', icon: LayoutGrid },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
     { href: '/admin/payments', label: 'Mes paiements', icon: CreditCard },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
@@ -102,6 +104,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
             {navItems.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href));
+              const showUnreadBubble = href === '/messages' && unreadMessagesCount > 0;
               return (
                 <Link
                   key={href}
@@ -110,7 +113,12 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold ${isActive ? 'bg-kraft-300 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-200 hover:text-kraft-black'}`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  {label}
+                  <span className="flex-1 min-w-0 truncate">{label}</span>
+                  {showUnreadBubble && (
+                    <span className="shrink-0 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
+                      {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
