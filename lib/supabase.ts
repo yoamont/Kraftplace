@@ -16,6 +16,19 @@ export type Brand = {
   description: string | null;
   image_url: string | null;
   default_commission_rate: number | null;
+  /** Statut juridique : sarl, sas, sasu, sa, eurl, ei, microentrepreneur, association, other */
+  legal_status: string | null;
+  /** Précision lorsque legal_status = other */
+  legal_status_other: string | null;
+  company_name: string | null;
+  registered_address: string | null;
+  siret: string | null;
+  /** Nom et prénom du représentant */
+  representative_name: string | null;
+  email: string | null;
+  phone: string | null;
+  /** Chemin du fichier attestation RC Pro (bucket brand-documents, privé) */
+  rc_pro_attestation_path: string | null;
 };
 
 export type Showroom = {
@@ -40,6 +53,15 @@ export type Showroom = {
   candidature_open_from: string | null;
   candidature_open_to: string | null;
   publication_status: 'draft' | 'published';
+  /** Statut juridique : sarl, sas, sasu, sa, eurl, ei, microentrepreneur, association, other */
+  legal_status: string | null;
+  legal_status_other: string | null;
+  company_name: string | null;
+  registered_address: string | null;
+  siret: string | null;
+  representative_name: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 export type RentPeriod = 'week' | 'month' | 'one_off';
@@ -93,6 +115,10 @@ export type Candidature = {
   status: CandidatureStatus;
   expires_at: string | null;
   validity_days: number | null;
+  /** Date de début du partenariat proposé */
+  partnership_start_at: string | null;
+  /** Date de fin du partenariat proposé */
+  partnership_end_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 };

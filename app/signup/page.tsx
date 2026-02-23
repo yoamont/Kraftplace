@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const type = searchParams.get('type') as 'brand' | 'showroom' | null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const redirectTo = type === 'brand' || type === 'showroom' ? `/admin/onboarding?type=${type}` : '/admin';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,13 +24,13 @@ export default function SignupPage() {
       const { error: err } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/admin` },
+        options: { emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}${redirectTo}` },
       });
       if (err) {
         setError(err.message);
         return;
       }
-      router.push('/admin');
+      router.push(redirectTo);
     } finally {
       setLoading(false);
     }
@@ -39,7 +43,9 @@ export default function SignupPage() {
           Kraftplace
         </Link>
         <h1 className="text-2xl font-bold text-kraft-black">Créer un compte</h1>
-        <p className="mt-1 text-sm text-kraft-700">Rejoignez Kraftplace</p>
+        <p className="mt-1 text-sm text-kraft-700">
+          {type === 'brand' ? 'Inscription en tant que marque' : type === 'showroom' ? 'Inscription en tant que boutique' : 'Rejoignez Kraftplace'}
+        </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-semibold text-kraft-800 mb-1">Email</label>

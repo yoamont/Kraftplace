@@ -90,7 +90,10 @@ export function MessageEntry({
         <div className="space-y-1 text-sm text-neutral-700">
           {meta.commission_percent != null && <p>Commission : {String(meta.commission_percent)} %</p>}
           {meta.rent != null && <p>Loyer : {String(meta.rent)} €{rentPeriodLabel(meta.rent_period)}</p>}
-          {meta.validity_days != null && <p>Validité : {String(meta.validity_days)} jours</p>}
+          {meta.partnership_start_at != null && meta.partnership_end_at != null && (
+            <p>Partenariat : du {new Date(meta.partnership_start_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au {new Date(meta.partnership_end_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+          )}
+          {meta.validity_days != null && !meta.partnership_start_at && !meta.partnership_end_at && <p>Validité : {String(meta.validity_days)} jours</p>}
           {meta.option_description && <p className="text-neutral-600">{String(meta.option_description)}</p>}
           {meta.negotiation_message && <p className="text-neutral-600 italic">{String(meta.negotiation_message)}</p>}
         </div>
@@ -157,7 +160,10 @@ export function MessageEntry({
             <div className="space-y-1 text-sm text-neutral-700">
               {commission != null && <p>Commission : {String(commission)} %</p>}
               {rent != null && <p>Loyer : {String(rent)} €{rentPeriod}</p>}
-              {meta.validity_days != null && <p>Validité : {String(meta.validity_days)} jours</p>}
+              {meta.partnership_start_at != null && meta.partnership_end_at != null && (
+                <p>Partenariat : du {new Date(meta.partnership_start_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au {new Date(meta.partnership_end_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              )}
+              {meta.validity_days != null && !meta.partnership_start_at && !meta.partnership_end_at && <p>Validité : {String(meta.validity_days)} jours</p>}
               {meta.option_description && <p className="text-neutral-600">{String(meta.option_description)}</p>}
             </div>
             {isPending && onAcceptDeal && onDeclineDeal && (

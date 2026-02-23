@@ -9,6 +9,18 @@ import { ArrowLeft, Loader2, Check, Trash2, Upload, ImageIcon } from 'lucide-rea
 import type { Showroom, ShowroomCommissionOption } from '@/lib/supabase';
 import { ShowroomFichePreview } from '../components/ShowroomFichePreview';
 
+const LEGAL_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'sarl', label: 'SARL' },
+  { value: 'sas', label: 'SAS' },
+  { value: 'sasu', label: 'SASU' },
+  { value: 'sa', label: 'SA' },
+  { value: 'eurl', label: 'EURL' },
+  { value: 'ei', label: 'EI (Entreprise individuelle)' },
+  { value: 'microentrepreneur', label: 'Micro-entrepreneur' },
+  { value: 'association', label: 'Association' },
+  { value: 'other', label: 'Autre' },
+];
+
 type RentPeriodValue = 'week' | 'month' | 'one_off';
 
 type CommissionOptionForm = {
@@ -35,6 +47,14 @@ type FormSnapshot = {
   candidatureOpenTo: string;
   publicationStatus: 'draft' | 'published';
   commissionOptions: CommissionOptionForm[];
+  legalStatus: string;
+  legalStatusOther: string;
+  companyName: string;
+  registeredAddress: string;
+  siret: string;
+  representativeName: string;
+  email: string;
+  phone: string;
 };
 
 function optionFromRow(o: ShowroomCommissionOption): CommissionOptionForm {
@@ -69,6 +89,14 @@ function snapshotFromShowroom(s: Showroom, options: ShowroomCommissionOption[]):
     candidatureOpenTo: s.candidature_open_to ?? '',
     publicationStatus: s.publication_status ?? 'draft',
     commissionOptions: opts.slice(0, 3),
+    legalStatus: s.legal_status ?? '',
+    legalStatusOther: s.legal_status_other ?? '',
+    companyName: s.company_name ?? '',
+    registeredAddress: s.registered_address ?? '',
+    siret: s.siret ?? '',
+    representativeName: s.representative_name ?? '',
+    email: s.email ?? '',
+    phone: s.phone ?? '',
   };
 }
 
@@ -99,6 +127,14 @@ export default function ShowroomConfigPage() {
   const [candidatureOpenFrom, setCandidatureOpenFrom] = useState('');
   const [candidatureOpenTo, setCandidatureOpenTo] = useState('');
   const [publicationStatus, setPublicationStatus] = useState<'draft' | 'published'>('draft');
+  const [legalStatus, setLegalStatus] = useState('');
+  const [legalStatusOther, setLegalStatusOther] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [registeredAddress, setRegisteredAddress] = useState('');
+  const [siret, setSiret] = useState('');
+  const [representativeName, setRepresentativeName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [commissionOptions, setCommissionOptions] = useState<CommissionOptionForm[]>([
     { rent: '', rentPeriod: 'month', commissionPercent: '', description: '' },
     { rent: '', rentPeriod: 'month', commissionPercent: '', description: '' },
@@ -135,6 +171,14 @@ export default function ShowroomConfigPage() {
       setCandidatureOpenFrom(snap.candidatureOpenFrom);
       setCandidatureOpenTo(snap.candidatureOpenTo);
       setPublicationStatus(snap.publicationStatus);
+      setLegalStatus(snap.legalStatus);
+      setLegalStatusOther(snap.legalStatusOther);
+      setCompanyName(snap.companyName);
+      setRegisteredAddress(snap.registeredAddress);
+      setSiret(snap.siret);
+      setRepresentativeName(snap.representativeName);
+      setEmail(snap.email);
+      setPhone(snap.phone);
       setCommissionOptions(snap.commissionOptions);
       setLoading(false);
     })();
@@ -157,8 +201,16 @@ export default function ShowroomConfigPage() {
       candidatureOpenTo,
       publicationStatus,
       commissionOptions,
+      legalStatus,
+      legalStatusOther,
+      companyName,
+      registeredAddress,
+      siret,
+      representativeName,
+      email,
+      phone,
     }),
-    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, isPermanent, startDate, endDate, candidatureOpenFrom, candidatureOpenTo, publicationStatus, commissionOptions]
+    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, isPermanent, startDate, endDate, candidatureOpenFrom, candidatureOpenTo, publicationStatus, commissionOptions, legalStatus, legalStatusOther, companyName, registeredAddress, siret, representativeName, email, phone]
   );
 
   const hasChanges = useMemo(() => {
@@ -187,7 +239,15 @@ export default function ShowroomConfigPage() {
       initialSnapshot.endDate !== currentSnapshot.endDate ||
       initialSnapshot.candidatureOpenFrom !== currentSnapshot.candidatureOpenFrom ||
       initialSnapshot.candidatureOpenTo !== currentSnapshot.candidatureOpenTo ||
-      initialSnapshot.publicationStatus !== currentSnapshot.publicationStatus
+      initialSnapshot.publicationStatus !== currentSnapshot.publicationStatus ||
+      initialSnapshot.legalStatus !== currentSnapshot.legalStatus ||
+      initialSnapshot.legalStatusOther !== currentSnapshot.legalStatusOther ||
+      initialSnapshot.companyName !== currentSnapshot.companyName ||
+      initialSnapshot.registeredAddress !== currentSnapshot.registeredAddress ||
+      initialSnapshot.siret !== currentSnapshot.siret ||
+      initialSnapshot.representativeName !== currentSnapshot.representativeName ||
+      initialSnapshot.email !== currentSnapshot.email ||
+      initialSnapshot.phone !== currentSnapshot.phone
     );
   }, [initialSnapshot, currentSnapshot]);
 
@@ -285,6 +345,14 @@ export default function ShowroomConfigPage() {
           candidature_open_from: candidatureOpenFrom.trim() || null,
           candidature_open_to: candidatureOpenTo.trim() || null,
           publication_status: publicationStatus,
+          legal_status: legalStatus || null,
+          legal_status_other: legalStatus === 'other' ? legalStatusOther.trim() || null : null,
+          company_name: companyName.trim() || null,
+          registered_address: registeredAddress.trim() || null,
+          siret: siret.trim().length === 14 ? siret.trim() : null,
+          representative_name: representativeName.trim() || null,
+          email: email.trim() || null,
+          phone: phone.trim() || null,
         })
         .eq('id', activeShowroom.id);
       if (err) {
@@ -334,6 +402,14 @@ export default function ShowroomConfigPage() {
         candidatureOpenTo: candidatureOpenTo,
         publicationStatus: publicationStatus,
         commissionOptions: optsSnapshot.slice(0, 3),
+        legalStatus,
+        legalStatusOther: legalStatus === 'other' ? legalStatusOther.trim() : '',
+        companyName: companyName.trim(),
+        registeredAddress: registeredAddress.trim(),
+        siret: siret.trim(),
+        representativeName: representativeName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
       });
       setSavedSuccess(true);
       setError(null);
@@ -448,6 +524,103 @@ export default function ShowroomConfigPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+        <div className="border-t border-neutral-200 pt-6 mt-6">
+          <h2 className="text-sm font-semibold text-neutral-900 mb-4">Informations juridiques et contact</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Statut juridique *</label>
+              <select
+                value={legalStatus}
+                onChange={(e) => setLegalStatus(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              >
+                <option value="">Sélectionnez un statut</option>
+                {LEGAL_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {legalStatus === 'other' && (
+                <input
+                  type="text"
+                  value={legalStatusOther}
+                  onChange={(e) => setLegalStatusOther(e.target.value)}
+                  placeholder="Précisez le statut juridique"
+                  className="mt-2 w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Nom de l'entreprise *</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                placeholder="Raison sociale"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Adresse de domiciliation *</label>
+              <textarea
+                value={registeredAddress}
+                onChange={(e) => setRegisteredAddress(e.target.value)}
+                required
+                rows={2}
+                placeholder="Adresse du siège social"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Numéro SIRET *</label>
+              <input
+                type="text"
+                value={siret}
+                onChange={(e) => setSiret(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                required
+                placeholder="14 chiffres"
+                maxLength={14}
+                pattern="[0-9]{14}"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+              {siret.length > 0 && siret.length !== 14 && (
+                <p className="mt-0.5 text-xs text-amber-700">Le SIRET doit comporter 14 chiffres.</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Nom et prénom du représentant</label>
+              <input
+                type="text"
+                value={representativeName}
+                onChange={(e) => setRepresentativeName(e.target.value)}
+                placeholder="Jean Dupont"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">E-mail *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="contact@entreprise.fr"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Téléphone (optionnel)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+33 1 23 45 67 89"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
           </div>
         </div>
         <div>
@@ -598,6 +771,10 @@ export default function ShowroomConfigPage() {
             candidatureOpenFrom={candidatureOpenFrom}
             candidatureOpenTo={candidatureOpenTo}
             commissionOptions={commissionOptions}
+            companyName={companyName.trim() || undefined}
+            representativeName={representativeName.trim() || undefined}
+            email={email.trim() || undefined}
+            phone={phone.trim() || undefined}
           />
         </div>
       </div>

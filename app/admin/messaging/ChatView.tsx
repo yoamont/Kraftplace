@@ -63,7 +63,8 @@ export function ChatView({
   const [candIsNegotiation, setCandIsNegotiation] = useState(false);
   const [candNegotiationMessage, setCandNegotiationMessage] = useState('');
   const [candMotivationMessage, setCandMotivationMessage] = useState('');
-  const [candValidityDays, setCandValidityDays] = useState<7 | 14>(7);
+  const [candPartnershipStart, setCandPartnershipStart] = useState('');
+  const [candPartnershipEnd, setCandPartnershipEnd] = useState('');
   const [candSubmitting, setCandSubmitting] = useState(false);
 
   // Modal demande de paiement
@@ -110,22 +111,30 @@ export function ChatView({
       setCandIsNegotiation(false);
       setCandNegotiationMessage('');
       setCandMotivationMessage('');
-      setCandValidityDays(7);
+      setCandPartnershipStart('');
+      setCandPartnershipEnd('');
     })();
   }, [showCandidatureModal, showroomId]);
 
   const canSubmitCandidature =
-    (candSelectedOptionId != null && !candIsNegotiation) || (candIsNegotiation && candNegotiationMessage.trim().length > 0);
+    ((candSelectedOptionId != null && !candIsNegotiation) || (candIsNegotiation && candNegotiationMessage.trim().length > 0)) &&
+    candPartnershipStart.trim().length > 0 &&
+    candPartnershipEnd.trim().length > 0;
 
   const handleSubmitCandidatureFromChat = async () => {
     if (!conversationId || !currentUserId || !activeBrand || entityType !== 'brand') return;
     if (!canSubmitCandidature) return;
     setCandSubmitting(true);
     try {
-      const expiresAt = new Date(Date.now() + candValidityDays * 24 * 60 * 60 * 1000).toISOString();
+      const startAt = new Date(candPartnershipStart);
+      startAt.setHours(0, 0, 0, 0);
+      const endAt = new Date(candPartnershipEnd);
+      endAt.setHours(23, 59, 59, 999);
+      const expiresAt = endAt.toISOString();
       const metadata: Record<string, unknown> = {
         status: 'pending',
-        validity_days: candValidityDays,
+        partnership_start_at: startAt.toISOString(),
+        partnership_end_at: endAt.toISOString(),
         expires_at: expiresAt,
       };
       if (candSelectedOptionId != null && !candIsNegotiation && candOptions.length) {
@@ -573,17 +582,30 @@ export function ChatView({
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 mb-2">Offre valable</p>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="chat-validity" checked={candValidityDays === 7} onChange={() => setCandValidityDays(7)} className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900" />
-                      <span className="text-sm text-neutral-700">7 jours</span>
+                  <p className="text-sm font-medium text-neutral-900 mb-2">Période du partenariat</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de début</span>
+                      <input
+                        type="date"
+                        value={candPartnershipStart}
+                        onChange={(e) => setCandPartnershipStart(e.target.value)}
+                        min={new Date().toISOString().slice(0, 10)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                      />
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="chat-validity" checked={candValidityDays === 14} onChange={() => setCandValidityDays(14)} className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900" />
-                      <span className="text-sm text-neutral-700">14 jours</span>
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de fin</span>
+                      <input
+                        type="date"
+                        value={candPartnershipEnd}
+                        onChange={(e) => setCandPartnershipEnd(e.target.value)}
+                        min={candPartnershipStart || new Date().toISOString().slice(0, 10)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                      />
                     </label>
                   </div>
+                  <p className="text-xs text-neutral-500 mt-0.5">L’offre pourra être acceptée jusqu’à la date de fin.</p>
                 </div>
                 <div>
                   <label htmlFor="chat-motivation" className="block text-sm font-medium text-neutral-900 mb-1">Message (optionnel)</label>

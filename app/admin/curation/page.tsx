@@ -641,7 +641,16 @@ export default function CurationPage() {
                           {c.created_at && (
                             <p className="mt-1 text-xs text-neutral-500">Envoyée le {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {c.status === 'pending' && c.expires_at && (
+                          {c.status === 'pending' && (c.partnership_start_at || c.partnership_end_at) && (
+                            <p className="mt-1 text-xs text-amber-700">
+                              Partenariat {c.partnership_start_at && c.partnership_end_at
+                                ? `du ${new Date(c.partnership_start_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au ${new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                : c.partnership_end_at
+                                  ? `jusqu'au ${new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                                  : `à partir du ${new Date(c.partnership_start_at!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                            </p>
+                          )}
+                          {c.status === 'pending' && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
                             <p className="mt-1 text-xs text-amber-700">Valable jusqu'au {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
                           {c.status === 'expired' && c.expires_at && (

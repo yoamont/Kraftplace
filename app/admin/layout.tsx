@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard, Search } from 'lucide-react';
 import { AdminEntityProvider, useAdminEntity } from './context/AdminEntityContext';
 import { useUnreadMessagesCount } from '@/lib/hooks/useUnreadMessagesCount';
 import { MessengerPanelProvider } from './context/MessengerPanelContext';
@@ -55,7 +55,8 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
   const showroomNav = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/showroom-config', label: 'Ma boutique', icon: Settings },
-    { href: '/admin/curation', label: 'Demandes reçues', icon: LayoutGrid },
+    { href: '/admin/curation', label: 'Mes partenariats', icon: LayoutGrid },
+    { href: '/admin/browse-brands', label: 'Parcourir les marques', icon: Search },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
     { href: '/admin/payments', label: 'Mes paiements', icon: CreditCard },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },

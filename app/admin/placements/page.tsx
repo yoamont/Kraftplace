@@ -47,7 +47,8 @@ export default function PlacementsListPage() {
   const [editIsNegotiation, setEditIsNegotiation] = useState(false);
   const [editNegotiationMessage, setEditNegotiationMessage] = useState('');
   const [editMessage, setEditMessage] = useState('');
-  const [editValidityDays, setEditValidityDays] = useState<7 | 14>(7);
+  const [editPartnershipStart, setEditPartnershipStart] = useState('');
+  const [editPartnershipEnd, setEditPartnershipEnd] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -259,7 +260,8 @@ export default function PlacementsListPage() {
     setEditIsNegotiation(!!(c.negotiation_message?.trim()));
     setEditNegotiationMessage(c.negotiation_message ?? '');
     setEditMessage(c.message ?? '');
-    setEditValidityDays((c.validity_days === 14 ? 14 : 7) as 7 | 14);
+    setEditPartnershipStart(c.partnership_start_at ? c.partnership_start_at.slice(0, 10) : '');
+    setEditPartnershipEnd(c.partnership_end_at ? c.partnership_end_at.slice(0, 10) : '');
     const { data } = await supabase.from('showroom_commission_options').select('*').eq('showroom_id', c.showroom_id).order('sort_order');
     setEditOptions((data as ShowroomCommissionOption[]) ?? []);
   }
@@ -277,17 +279,26 @@ export default function PlacementsListPage() {
       setEditError('Choisissez une option ou renseignez votre négociation.');
       return;
     }
+    if (!editPartnershipStart.trim() || !editPartnershipEnd.trim()) {
+      setEditError('Renseignez la date de début et la date de fin du partenariat.');
+      return;
+    }
     setEditError(null);
     setSavingEdit(true);
     try {
-      const expiresAt = new Date(Date.now() + editValidityDays * 24 * 60 * 60 * 1000).toISOString();
+      const startAt = new Date(editPartnershipStart);
+      startAt.setHours(0, 0, 0, 0);
+      const endAt = new Date(editPartnershipEnd);
+      endAt.setHours(23, 59, 59, 999);
+      const expiresAt = endAt.toISOString();
       const { error } = await supabase
         .from('candidatures')
         .update({
           showroom_commission_option_id: hasOption ? editOptionId : null,
           negotiation_message: hasNegotiation ? editNegotiationMessage.trim() : null,
           message: editMessage.trim() || null,
-          validity_days: editValidityDays,
+          partnership_start_at: startAt.toISOString(),
+          partnership_end_at: endAt.toISOString(),
           expires_at: expiresAt,
           updated_at: new Date().toISOString(),
         })
@@ -528,7 +539,16 @@ export default function PlacementsListPage() {
                           {c.created_at && (
                             <p className="mt-1 text-xs text-neutral-500">Envoyée le {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {c.status === 'pending' && c.expires_at && (
+                          {c.status === 'pending' && (c.partnership_start_at || c.partnership_end_at) && (
+                            <p className="mt-1 text-xs text-amber-700">
+                              Partenariat {c.partnership_start_at && c.partnership_end_at
+                                ? `du ${new Date(c.partnership_start_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au ${new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                : c.partnership_end_at
+                                  ? `jusqu'au ${new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                                  : `à partir du ${new Date(c.partnership_start_at!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                            </p>
+                          )}
+                          {c.status === 'pending' && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
                             <p className="mt-1 text-xs text-amber-700">Valable jusqu'au {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
                           {c.status === 'expired' && c.expires_at && (
@@ -620,15 +640,26 @@ export default function PlacementsListPage() {
                   <textarea value={editMessage} onChange={(e) => setEditMessage(e.target.value)} placeholder="Message pour la boutique…" rows={2} className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neutral-900" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 mb-2">Offre valable</p>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="editValidity" checked={editValidityDays === 7} onChange={() => setEditValidityDays(7)} className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900" />
-                      <span className="text-sm text-neutral-700">7 jours</span>
+                  <p className="text-sm font-medium text-neutral-900 mb-2">Période du partenariat</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de début</span>
+                      <input
+                        type="date"
+                        value={editPartnershipStart}
+                        onChange={(e) => setEditPartnershipStart(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                      />
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="editValidity" checked={editValidityDays === 14} onChange={() => setEditValidityDays(14)} className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900" />
-                      <span className="text-sm text-neutral-700">14 jours</span>
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de fin</span>
+                      <input
+                        type="date"
+                        value={editPartnershipEnd}
+                        onChange={(e) => setEditPartnershipEnd(e.target.value)}
+                        min={editPartnershipStart || undefined}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                      />
                     </label>
                   </div>
                 </div>
@@ -637,7 +668,7 @@ export default function PlacementsListPage() {
                 <button type="button" onClick={closeEditModal} className="px-4 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-700 font-medium hover:bg-neutral-50">
                   Annuler
                 </button>
-                <button type="button" disabled={savingEdit || (!editOptionId && !(editIsNegotiation && editNegotiationMessage.trim()))} onClick={saveEdit} className="px-4 py-2 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                <button type="button" disabled={savingEdit || (!editOptionId && !(editIsNegotiation && editNegotiationMessage.trim())) || !editPartnershipStart.trim() || !editPartnershipEnd.trim()} onClick={saveEdit} className="px-4 py-2 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                   {savingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enregistrer
                 </button>
               </div>

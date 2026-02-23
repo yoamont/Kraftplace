@@ -53,7 +53,8 @@ export default function DiscoverPage() {
   const [isNegotiation, setIsNegotiation] = useState(false);
   const [negotiationMessage, setNegotiationMessage] = useState('');
   const [motivationMessage, setMotivationMessage] = useState('');
-  const [validityDays, setValidityDays] = useState<7 | 14>(7);
+  const [partnershipStartDate, setPartnershipStartDate] = useState('');
+  const [partnershipEndDate, setPartnershipEndDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -87,7 +88,8 @@ export default function DiscoverPage() {
     setIsNegotiation(false);
     setNegotiationMessage('');
     setMotivationMessage('');
-    setValidityDays(7);
+    setPartnershipStartDate('');
+    setPartnershipEndDate('');
     const { data } = await supabase
       .from('showroom_commission_options')
       .select('*')
@@ -101,6 +103,7 @@ export default function DiscoverPage() {
     const hasOption = selectedOptionId != null && !isNegotiation;
     const hasNegotiation = isNegotiation && negotiationMessage.trim().length > 0;
     if (!hasOption && !hasNegotiation) return;
+    if (!partnershipStartDate.trim() || !partnershipEndDate.trim()) return;
     setSubmitting(true);
     try {
       const conversationId = await getOrCreateConversationId(activeBrand.id, modalShowroom.id);
@@ -109,10 +112,15 @@ export default function DiscoverPage() {
         return;
       }
 
-      const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString();
+      const startAt = new Date(partnershipStartDate);
+      startAt.setHours(0, 0, 0, 0);
+      const endAt = new Date(partnershipEndDate);
+      endAt.setHours(23, 59, 59, 999);
+      const expiresAt = endAt.toISOString();
       const metadata: Record<string, unknown> = {
         status: 'pending',
-        validity_days: validityDays,
+        partnership_start_at: startAt.toISOString(),
+        partnership_end_at: endAt.toISOString(),
         expires_at: expiresAt,
       };
       if (hasOption && modalCommissionOptions) {
@@ -181,8 +189,7 @@ export default function DiscoverPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-neutral-900">Vendre mes produits</h1>
-      <p className="mt-1 text-sm text-neutral-500">Explorez les boutiques et candidater en choisissant une option de rémunération ou en proposant une négociation.</p>
+      <h1 className="text-xl font-semibold text-neutral-900">Propulsez votre marque dans les meilleurs lieux de vente</h1>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {showrooms.map((s) => (
@@ -353,30 +360,30 @@ export default function DiscoverPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 mb-2">Offre valable</p>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  <p className="text-sm font-medium text-neutral-900 mb-2">Période du partenariat</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de début</span>
                       <input
-                        type="radio"
-                        name="validity"
-                        checked={validityDays === 7}
-                        onChange={() => setValidityDays(7)}
-                        className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+                        type="date"
+                        value={partnershipStartDate}
+                        onChange={(e) => setPartnershipStartDate(e.target.value)}
+                        min={new Date().toISOString().slice(0, 10)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                       />
-                      <span className="text-sm text-neutral-700">7 jours</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="block">
+                      <span className="text-xs text-neutral-600 block mb-1">Date de fin</span>
                       <input
-                        type="radio"
-                        name="validity"
-                        checked={validityDays === 14}
-                        onChange={() => setValidityDays(14)}
-                        className="rounded-full border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+                        type="date"
+                        value={partnershipEndDate}
+                        onChange={(e) => setPartnershipEndDate(e.target.value)}
+                        min={partnershipStartDate || new Date().toISOString().slice(0, 10)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                       />
-                      <span className="text-sm text-neutral-700">14 jours</span>
                     </label>
                   </div>
-                  <p className="text-xs text-neutral-500 mt-0.5">Passé ce délai, la demande sera automatiquement rejetée.</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">L’offre pourra être acceptée jusqu’à la date de fin du partenariat.</p>
                 </div>
 
                 <div>

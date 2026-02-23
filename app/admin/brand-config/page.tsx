@@ -5,11 +5,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
-import { ArrowLeft, Loader2, Check, Upload, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, Upload, ImageIcon, FileText } from 'lucide-react';
 import type { Brand } from '@/lib/supabase';
 import { BrandFichePreview } from '../components/BrandFichePreview';
 
 const BRAND_ASSETS_BUCKET = 'brand-assets';
+const BRAND_DOCUMENTS_BUCKET = 'brand-documents';
+
+const LEGAL_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'sarl', label: 'SARL' },
+  { value: 'sas', label: 'SAS' },
+  { value: 'sasu', label: 'SASU' },
+  { value: 'sa', label: 'SA' },
+  { value: 'eurl', label: 'EURL' },
+  { value: 'ei', label: 'EI (Entreprise individuelle)' },
+  { value: 'microentrepreneur', label: 'Micro-entrepreneur' },
+  { value: 'association', label: 'Association' },
+  { value: 'other', label: 'Autre' },
+];
 
 export default function BrandConfigPage() {
   const router = useRouter();
@@ -20,13 +33,25 @@ export default function BrandConfigPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingRcPro, setUploadingRcPro] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const rcProInputRef = useRef<HTMLInputElement>(null);
 
   const [brandName, setBrandName] = useState('');
   const [description, setDescription] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [legalStatus, setLegalStatus] = useState('');
+  const [legalStatusOther, setLegalStatusOther] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [registeredAddress, setRegisteredAddress] = useState('');
+  const [siret, setSiret] = useState('');
+  const [representativeName, setRepresentativeName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [rcProAttestationPath, setRcProAttestationPath] = useState<string | null>(null);
+  const [rcProSignedUrl, setRcProSignedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (entityType !== 'brand' || !activeBrand) {
@@ -37,8 +62,30 @@ export default function BrandConfigPage() {
     setDescription(activeBrand.description ?? '');
     setAvatarUrl(activeBrand.avatar_url ?? '');
     setImageUrl(activeBrand.image_url ?? '');
+    setLegalStatus(activeBrand.legal_status ?? '');
+    setLegalStatusOther(activeBrand.legal_status_other ?? '');
+    setCompanyName(activeBrand.company_name ?? '');
+    setRegisteredAddress(activeBrand.registered_address ?? '');
+    setSiret(activeBrand.siret ?? '');
+    setEmail(activeBrand.email ?? '');
+    setPhone(activeBrand.phone ?? '');
+    setRcProAttestationPath(activeBrand.rc_pro_attestation_path ?? null);
     setLoading(false);
   }, [entityType, activeBrand]);
+
+  useEffect(() => {
+    if (!activeBrand?.rc_pro_attestation_path) {
+      setRcProSignedUrl(null);
+      return;
+    }
+    supabase.storage
+      .from(BRAND_DOCUMENTS_BUCKET)
+      .createSignedUrl(activeBrand.rc_pro_attestation_path, 3600)
+      .then(({ data, error }) => {
+        if (!error && data?.signedUrl) setRcProSignedUrl(data.signedUrl);
+        else setRcProSignedUrl(null);
+      });
+  }, [activeBrand?.rc_pro_attestation_path, rcProAttestationPath]);
 
   useEffect(() => {
     if (!savedSuccess) return;
@@ -87,12 +134,51 @@ export default function BrandConfigPage() {
     }
   }
 
+  async function onRcProFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !activeBrand) return;
+    e.target.value = '';
+    setError(null);
+    setUploadingRcPro(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const path = `brands/${activeBrand.id}/rc_pro.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(BRAND_DOCUMENTS_BUCKET)
+        .upload(path, file, { upsert: true });
+      if (uploadError) {
+        setError(uploadError.message);
+        return;
+      }
+      setRcProAttestationPath(path);
+      const { data: signed } = await supabase.storage.from(BRAND_DOCUMENTS_BUCKET).createSignedUrl(path, 3600);
+      if (signed?.signedUrl) setRcProSignedUrl(signed.signedUrl);
+      await refresh();
+    } finally {
+      setUploadingRcPro(false);
+    }
+  }
+
+  function removeRcPro() {
+    setRcProAttestationPath(null);
+    setRcProSignedUrl(null);
+  }
+
   const hasChanges =
     activeBrand &&
     (brandName.trim() !== (activeBrand.brand_name ?? '') ||
       description.trim() !== (activeBrand.description ?? '') ||
       avatarUrl.trim() !== (activeBrand.avatar_url ?? '') ||
-      imageUrl.trim() !== (activeBrand.image_url ?? ''));
+      imageUrl.trim() !== (activeBrand.image_url ?? '') ||
+      legalStatus !== (activeBrand.legal_status ?? '') ||
+      legalStatusOther.trim() !== (activeBrand.legal_status_other ?? '') ||
+      companyName.trim() !== (activeBrand.company_name ?? '') ||
+      registeredAddress.trim() !== (activeBrand.registered_address ?? '') ||
+      siret.trim() !== (activeBrand.siret ?? '') ||
+      representativeName.trim() !== (activeBrand.representative_name ?? '') ||
+      email.trim() !== (activeBrand.email ?? '') ||
+      phone.trim() !== (activeBrand.phone ?? '') ||
+      (rcProAttestationPath ?? '') !== (activeBrand.rc_pro_attestation_path ?? ''));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -107,6 +193,15 @@ export default function BrandConfigPage() {
           description: description.trim() || null,
           avatar_url: avatarUrl.trim() || null,
           image_url: imageUrl.trim() || null,
+          legal_status: legalStatus || null,
+          legal_status_other: legalStatus === 'other' ? legalStatusOther.trim() || null : null,
+          company_name: companyName.trim() || null,
+          registered_address: registeredAddress.trim() || null,
+          siret: siret.trim().replace(/\s/g, '') || null,
+          representative_name: representativeName.trim() || null,
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+          rc_pro_attestation_path: rcProAttestationPath || null,
         })
         .eq('id', activeBrand.id);
       if (err) {
@@ -234,6 +329,141 @@ export default function BrandConfigPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="border-t border-neutral-200 pt-6 mt-6">
+          <h2 className="text-sm font-semibold text-neutral-900 mb-4">Informations juridiques et contact</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Statut juridique *</label>
+              <select
+                value={legalStatus}
+                onChange={(e) => setLegalStatus(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              >
+                <option value="">Sélectionnez un statut</option>
+                {LEGAL_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {legalStatus === 'other' && (
+                <input
+                  type="text"
+                  value={legalStatusOther}
+                  onChange={(e) => setLegalStatusOther(e.target.value)}
+                  placeholder="Précisez le statut juridique"
+                  className="mt-2 w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Nom de l’entreprise *</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                placeholder="Raison sociale"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Adresse de domiciliation *</label>
+              <textarea
+                value={registeredAddress}
+                onChange={(e) => setRegisteredAddress(e.target.value)}
+                required
+                rows={2}
+                placeholder="Adresse du siège social"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Numéro SIRET *</label>
+              <input
+                type="text"
+                value={siret}
+                onChange={(e) => setSiret(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                required
+                placeholder="14 chiffres"
+                maxLength={14}
+                pattern="[0-9]{14}"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+              {siret.length > 0 && siret.length !== 14 && (
+                <p className="mt-0.5 text-xs text-amber-700">Le SIRET doit comporter 14 chiffres.</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Nom et prénom du représentant</label>
+              <input
+                type="text"
+                value={representativeName}
+                onChange={(e) => setRepresentativeName(e.target.value)}
+                placeholder="Jean Dupont"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">E-mail *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="contact@entreprise.fr"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Téléphone (optionnel)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+33 1 23 45 67 89"
+                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Attestation RC Pro</label>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  ref={rcProInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf,image/*"
+                  onChange={onRcProFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => rcProInputRef.current?.click()}
+                  disabled={uploadingRcPro}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  {uploadingRcPro ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {uploadingRcPro ? 'Envoi…' : 'Choisir un fichier'}
+                </button>
+                {(rcProAttestationPath || rcProSignedUrl) && (
+                  <span className="flex items-center gap-2 text-sm text-neutral-600">
+                    <FileText className="h-4 w-4 text-neutral-500" />
+                    {rcProSignedUrl ? (
+                      <a href={rcProSignedUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-900 hover:underline">
+                        Voir l’attestation
+                      </a>
+                    ) : (
+                      'Fichier déposé'
+                    )}
+                    <button type="button" onClick={removeRcPro} className="text-neutral-500 hover:text-red-600 text-xs">
+                      Supprimer
+                    </button>
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-neutral-500">PDF ou image. Document stocké de façon sécurisée.</p>
+            </div>
           </div>
         </div>
 

@@ -209,11 +209,16 @@ export function CandidatureDetailModal({
             <>
               {/* Résumé offre + actions bilatérales */}
               <div className="p-4 border-b border-neutral-100 bg-neutral-50/50 shrink-0 space-y-3">
-                {(offerSummary != null || c.validity_days != null || (c.message != null && c.message.trim() !== '')) && (
+                {(offerSummary != null || c.partnership_start_at != null || c.partnership_end_at != null || c.validity_days != null || (c.message != null && c.message.trim() !== '')) && (
                   <div className="p-3 rounded-lg border border-neutral-200 bg-white space-y-1">
                     <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Offre actuelle</p>
                     {offerSummary != null && <p className="text-sm text-neutral-900">{offerSummary}</p>}
-                    {c.validity_days != null && <p className="text-sm text-neutral-700">Valable {c.validity_days} jours</p>}
+                    {c.partnership_start_at != null && c.partnership_end_at != null && (
+                      <p className="text-sm text-neutral-700">
+                        Partenariat du {new Date(c.partnership_start_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au {new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    )}
+                    {c.validity_days != null && !c.partnership_start_at && !c.partnership_end_at && <p className="text-sm text-neutral-700">Valable {c.validity_days} jours</p>}
                     {c.message != null && c.message.trim() !== '' && <p className="text-sm text-neutral-600 mt-1">{c.message.trim()}</p>}
                   </div>
                 )}

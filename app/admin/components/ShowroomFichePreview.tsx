@@ -106,15 +106,23 @@ export type ShowroomFichePreviewProps = {
   candidatureOpenFrom?: string;
   candidatureOpenTo?: string;
   commissionOptions: OptionForm[];
+  /** Informations juridiques / contact (optionnel) */
+  companyName?: string;
+  representativeName?: string;
+  email?: string;
+  phone?: string;
 };
 
 /** Aperçu de la fiche boutique telle que vue par les marques dans "Vendre mes produits". */
-export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, isPermanent = true, startDate = '', endDate = '', candidatureOpenFrom, candidatureOpenTo, commissionOptions }: ShowroomFichePreviewProps) {
+export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, isPermanent = true, startDate = '', endDate = '', candidatureOpenFrom, candidatureOpenTo, commissionOptions, companyName, representativeName, email, phone }: ShowroomFichePreviewProps) {
   const candidatureStatus = getCandidatureWindowStatus(candidatureOpenFrom, candidatureOpenTo);
   const optionsWithContent = commissionOptions.filter(
     (o) => o.rent.trim() || o.commissionPercent.trim() || o.description.trim()
   );
   const ephemeralLabel = !isPermanent && (startDate || endDate) ? formatDateRange(startDate, endDate) : null;
+  const candidaturePeriodLabel = formatCandidaturePeriodLabel(candidatureOpenFrom ?? undefined, candidatureOpenTo ?? undefined);
+  const daysLeft = getCandidatureDaysLeft(candidatureOpenTo);
+  const showFomo = candidatureStatus === 'open' && daysLeft !== null && daysLeft <= 7;
 
   return (
     <article className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm">
@@ -179,6 +187,14 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
                 ? 'Plus qu’un jour avant la fin des candidatures'
                 : `Plus que ${daysLeft} jours avant la fin des candidatures`}
           </p>
+        )}
+        {(companyName?.trim() || representativeName?.trim() || email?.trim() || phone?.trim()) && (
+          <div className="mt-3 pt-3 border-t border-neutral-100 space-y-1">
+            {companyName?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Raison sociale :</span> {companyName.trim()}</p>}
+            {representativeName?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Représentant :</span> {representativeName.trim()}</p>}
+            {email?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Contact :</span> {email.trim()}</p>}
+            {phone?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Tél :</span> {phone.trim()}</p>}
+          </div>
         )}
         <div
           className={`mt-4 w-full py-2.5 rounded-lg text-sm font-medium text-center ${

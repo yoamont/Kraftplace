@@ -9,6 +9,7 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-playfair);
   /* Palette kraft — beige/marron chaleureux (hex directs pour génération des utilitaires) */
   --color-kraft-50: #faf6ef;
   --color-kraft-100: #f0e6d8;
@@ -38,6 +39,11 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* Typo éditoriale — titres premium (sélecteur Marque/Boutique) */
+.font-serif {
+  font-family: var(--font-playfair), "Georgia", serif;
+}
+
 /* Wordmark — K très imposant, typo brute sans fioritures */
 .kraftplace-wordmark {
   font-weight: 800;
@@ -48,3 +54,4 @@ body {
   font-weight: 900;
   letter-spacing: -0.05em;
 }
+
