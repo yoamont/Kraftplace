@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { ArrowLeft, Loader2, Check, Trash2, Upload, ImageIcon } from 'lucide-react';
-import type { Showroom, ShowroomCommissionOption } from '@/lib/supabase';
+import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
 import { ShowroomFichePreview } from '../components/ShowroomFichePreview';
+import { BadgeIcon } from '../components/BadgeIcon';
 
 const LEGAL_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'sarl', label: 'SARL' },
@@ -31,6 +32,8 @@ type CommissionOptionForm = {
   description: string;
 };
 
+export type ShopType = 'permanent' | 'ephemeral';
+
 type FormSnapshot = {
   name: string;
   address: string;
@@ -40,9 +43,9 @@ type FormSnapshot = {
   avatarUrl: string;
   imageUrl: string;
   instagramHandle: string;
-  isPermanent: boolean;
-  startDate: string;
-  endDate: string;
+  shopType: ShopType;
+  existenceStartDate: string;
+  existenceEndDate: string;
   candidatureOpenFrom: string;
   candidatureOpenTo: string;
   publicationStatus: 'draft' | 'published';
@@ -55,6 +58,7 @@ type FormSnapshot = {
   representativeName: string;
   email: string;
   phone: string;
+  badgeIds: number[];
 };
 
 function optionFromRow(o: ShowroomCommissionOption): CommissionOptionForm {
@@ -82,9 +86,9 @@ function snapshotFromShowroom(s: Showroom, options: ShowroomCommissionOption[]):
     avatarUrl: s.avatar_url ?? '',
     imageUrl: s.image_url ?? '',
     instagramHandle: s.instagram_handle ?? '',
-    isPermanent: s.is_permanent ?? true,
-    startDate: s.start_date ?? '',
-    endDate: s.end_date ?? '',
+    shopType: (s.shop_type === 'ephemeral' ? 'ephemeral' : 'permanent') as ShopType,
+    existenceStartDate: s.start_date ?? '',
+    existenceEndDate: s.end_date ?? '',
     candidatureOpenFrom: s.candidature_open_from ?? '',
     candidatureOpenTo: s.candidature_open_to ?? '',
     publicationStatus: s.publication_status ?? 'draft',
@@ -97,6 +101,7 @@ function snapshotFromShowroom(s: Showroom, options: ShowroomCommissionOption[]):
     representativeName: s.representative_name ?? '',
     email: s.email ?? '',
     phone: s.phone ?? '',
+    badgeIds: [],
   };
 }
 
@@ -121,12 +126,9 @@ export default function ShowroomConfigPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const [isPermanent, setIsPermanent] = useState(true);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [candidatureOpenFrom, setCandidatureOpenFrom] = useState('');
-  const [candidatureOpenTo, setCandidatureOpenTo] = useState('');
-  const [publicationStatus, setPublicationStatus] = useState<'draft' | 'published'>('draft');
+  const [shopType, setShopType] = useState<ShopType>('permanent');
+  const [existenceStartDate, setExistenceStartDate] = useState('');
+  const [existenceEndDate, setExistenceEndDate] = useState('');
   const [legalStatus, setLegalStatus] = useState('');
   const [legalStatusOther, setLegalStatusOther] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -140,6 +142,9 @@ export default function ShowroomConfigPage() {
     { rent: '', rentPeriod: 'month', commissionPercent: '', description: '' },
     { rent: '', rentPeriod: 'month', commissionPercent: '', description: '' },
   ]);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([]);
+  const MAX_BADGES = 5;
 
   const [initialSnapshot, setInitialSnapshot] = useState<FormSnapshot | null>(null);
 
@@ -149,14 +154,17 @@ export default function ShowroomConfigPage() {
       return;
     }
     (async () => {
-      const { data: optionsData } = await supabase
-        .from('showroom_commission_options')
-        .select('*')
-        .eq('showroom_id', activeShowroom.id)
-        .order('sort_order');
+      const [{ data: optionsData }, { data: badgesData }, { data: showroomBadgesData }] = await Promise.all([
+        supabase.from('showroom_commission_options').select('*').eq('showroom_id', activeShowroom.id).order('sort_order'),
+        supabase.from('badges').select('*').order('sort_order'),
+        supabase.from('showroom_badges').select('badge_id').eq('showroom_id', activeShowroom.id),
+      ]);
       const options = (optionsData as ShowroomCommissionOption[]) ?? [];
       const snap = snapshotFromShowroom(activeShowroom, options);
+      snap.badgeIds = ((showroomBadgesData as { badge_id: number }[]) ?? []).map((r) => r.badge_id);
       setInitialSnapshot(snap);
+      setAllBadges((badgesData as Badge[]) ?? []);
+      setSelectedBadgeIds(snap.badgeIds);
       setName(snap.name);
       setAddress(snap.address);
       setCity(snap.city);
@@ -165,12 +173,9 @@ export default function ShowroomConfigPage() {
       setAvatarUrl(snap.avatarUrl);
       setImageUrl(snap.imageUrl);
       setInstagramHandle(snap.instagramHandle);
-      setIsPermanent(snap.isPermanent);
-      setStartDate(snap.startDate);
-      setEndDate(snap.endDate);
-      setCandidatureOpenFrom(snap.candidatureOpenFrom);
-      setCandidatureOpenTo(snap.candidatureOpenTo);
-      setPublicationStatus(snap.publicationStatus);
+      setShopType(snap.shopType);
+      setExistenceStartDate(snap.existenceStartDate);
+      setExistenceEndDate(snap.existenceEndDate);
       setLegalStatus(snap.legalStatus);
       setLegalStatusOther(snap.legalStatusOther);
       setCompanyName(snap.companyName);
@@ -194,12 +199,12 @@ export default function ShowroomConfigPage() {
       avatarUrl,
       imageUrl,
       instagramHandle,
-      isPermanent,
-      startDate,
-      endDate,
-      candidatureOpenFrom,
-      candidatureOpenTo,
-      publicationStatus,
+      shopType,
+      existenceStartDate,
+      existenceEndDate,
+      candidatureOpenFrom: initialSnapshot?.candidatureOpenFrom ?? '',
+      candidatureOpenTo: initialSnapshot?.candidatureOpenTo ?? '',
+      publicationStatus: initialSnapshot?.publicationStatus ?? 'draft',
       commissionOptions,
       legalStatus,
       legalStatusOther,
@@ -209,8 +214,9 @@ export default function ShowroomConfigPage() {
       representativeName,
       email,
       phone,
+      badgeIds: selectedBadgeIds,
     }),
-    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, isPermanent, startDate, endDate, candidatureOpenFrom, candidatureOpenTo, publicationStatus, commissionOptions, legalStatus, legalStatusOther, companyName, registeredAddress, siret, representativeName, email, phone]
+    [name, address, city, codePostal, description, avatarUrl, imageUrl, instagramHandle, shopType, existenceStartDate, existenceEndDate, initialSnapshot?.candidatureOpenFrom, initialSnapshot?.candidatureOpenTo, initialSnapshot?.publicationStatus, commissionOptions, legalStatus, legalStatusOther, companyName, registeredAddress, siret, representativeName, email, phone, selectedBadgeIds]
   );
 
   const hasChanges = useMemo(() => {
@@ -234,12 +240,9 @@ export default function ShowroomConfigPage() {
       initialSnapshot.avatarUrl !== currentSnapshot.avatarUrl ||
       initialSnapshot.imageUrl !== currentSnapshot.imageUrl ||
       initialSnapshot.instagramHandle !== currentSnapshot.instagramHandle ||
-      initialSnapshot.isPermanent !== currentSnapshot.isPermanent ||
-      initialSnapshot.startDate !== currentSnapshot.startDate ||
-      initialSnapshot.endDate !== currentSnapshot.endDate ||
-      initialSnapshot.candidatureOpenFrom !== currentSnapshot.candidatureOpenFrom ||
-      initialSnapshot.candidatureOpenTo !== currentSnapshot.candidatureOpenTo ||
-      initialSnapshot.publicationStatus !== currentSnapshot.publicationStatus ||
+      initialSnapshot.shopType !== currentSnapshot.shopType ||
+      initialSnapshot.existenceStartDate !== currentSnapshot.existenceStartDate ||
+      initialSnapshot.existenceEndDate !== currentSnapshot.existenceEndDate ||
       initialSnapshot.legalStatus !== currentSnapshot.legalStatus ||
       initialSnapshot.legalStatusOther !== currentSnapshot.legalStatusOther ||
       initialSnapshot.companyName !== currentSnapshot.companyName ||
@@ -247,7 +250,9 @@ export default function ShowroomConfigPage() {
       initialSnapshot.siret !== currentSnapshot.siret ||
       initialSnapshot.representativeName !== currentSnapshot.representativeName ||
       initialSnapshot.email !== currentSnapshot.email ||
-      initialSnapshot.phone !== currentSnapshot.phone
+      initialSnapshot.phone !== currentSnapshot.phone ||
+      initialSnapshot.badgeIds.length !== currentSnapshot.badgeIds.length ||
+      initialSnapshot.badgeIds.some((id, i) => currentSnapshot.badgeIds[i] !== id)
     );
   }, [initialSnapshot, currentSnapshot]);
 
@@ -325,6 +330,18 @@ export default function ShowroomConfigPage() {
     e.preventDefault();
     if (!activeShowroom) return;
     setError(null);
+    if (shopType === 'ephemeral') {
+      const start = existenceStartDate?.trim();
+      const end = existenceEndDate?.trim();
+      if (!start || !end) {
+        setError('Pour un lieu éphémère, les dates d\'existence du lieu sont obligatoires.');
+        return;
+      }
+      if (new Date(end) < new Date(start)) {
+        setError('La date de fin d\'existence doit être postérieure à la date de début.');
+        return;
+      }
+    }
     setSaving(true);
     try {
       const { error: err } = await supabase
@@ -339,12 +356,10 @@ export default function ShowroomConfigPage() {
           image_url: imageUrl.trim() || null,
           default_commission_rate: null,
           instagram_handle: instagramHandle.trim() || null,
-          is_permanent: isPermanent,
-          start_date: startDate?.trim() || null,
-          end_date: endDate?.trim() || null,
-          candidature_open_from: candidatureOpenFrom.trim() || null,
-          candidature_open_to: candidatureOpenTo.trim() || null,
-          publication_status: publicationStatus,
+          shop_type: shopType,
+          is_permanent: shopType === 'permanent',
+          start_date: shopType === 'ephemeral' ? existenceStartDate.trim() || null : null,
+          end_date: shopType === 'ephemeral' ? existenceEndDate.trim() || null : null,
           legal_status: legalStatus || null,
           legal_status_other: legalStatus === 'other' ? legalStatusOther.trim() || null : null,
           company_name: companyName.trim() || null,
@@ -384,6 +399,16 @@ export default function ShowroomConfigPage() {
           return;
         }
       }
+      await supabase.from('showroom_badges').delete().eq('showroom_id', activeShowroom.id);
+      if (selectedBadgeIds.length > 0) {
+        const { error: errBadges } = await supabase
+          .from('showroom_badges')
+          .insert(selectedBadgeIds.map((badge_id) => ({ showroom_id: activeShowroom.id, badge_id })));
+        if (errBadges) {
+          setError(errBadges.message);
+          return;
+        }
+      }
       const optsSnapshot = commissionOptions.map((o) => ({ ...o }));
       while (optsSnapshot.length < 3) optsSnapshot.push({ rent: '', rentPeriod: 'month', commissionPercent: '', description: '' });
       setInitialSnapshot({
@@ -395,12 +420,12 @@ export default function ShowroomConfigPage() {
         avatarUrl: avatarUrl.trim(),
         imageUrl: imageUrl.trim(),
         instagramHandle: instagramHandle.trim(),
-        isPermanent: isPermanent,
-        startDate: startDate,
-        endDate: endDate,
-        candidatureOpenFrom: candidatureOpenFrom,
-        candidatureOpenTo: candidatureOpenTo,
-        publicationStatus: publicationStatus,
+        shopType,
+        existenceStartDate: shopType === 'ephemeral' ? existenceStartDate : '',
+        existenceEndDate: shopType === 'ephemeral' ? existenceEndDate : '',
+        candidatureOpenFrom: initialSnapshot?.candidatureOpenFrom ?? '',
+        candidatureOpenTo: initialSnapshot?.candidatureOpenTo ?? '',
+        publicationStatus: initialSnapshot?.publicationStatus ?? 'draft',
         commissionOptions: optsSnapshot.slice(0, 3),
         legalStatus,
         legalStatusOther: legalStatus === 'other' ? legalStatusOther.trim() : '',
@@ -410,6 +435,7 @@ export default function ShowroomConfigPage() {
         representativeName: representativeName.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        badgeIds: [...selectedBadgeIds],
       });
       setSavedSuccess(true);
       setError(null);
@@ -698,53 +724,80 @@ export default function ShowroomConfigPage() {
           <label className="block text-sm font-medium text-neutral-700 mb-1">Instagram</label>
           <input type="text" value={instagramHandle} onChange={(e) => setInstagramHandle(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="@maboutique" />
         </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="permanent" checked={isPermanent} onChange={(e) => setIsPermanent(e.target.checked)} className="rounded border-neutral-300" />
-          <label htmlFor="permanent" className="text-sm text-neutral-700">Lieu permanent</label>
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Type d'établissement</label>
+          <p className="text-xs text-neutral-500 mb-2">Définit l'identité de votre boutique : permanent (ouvert à l'année) ou éphémère (dates d'existence du lieu).</p>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="shopType" value="permanent" checked={shopType === 'permanent'} onChange={() => setShopType('permanent')} className="rounded-full border-neutral-300" />
+              <span className="text-sm text-neutral-700">Boutique permanente</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="shopType" value="ephemeral" checked={shopType === 'ephemeral'} onChange={() => setShopType('ephemeral')} className="rounded-full border-neutral-300" />
+              <span className="text-sm text-neutral-700">Lieu éphémère</span>
+            </label>
+          </div>
         </div>
-        {!isPermanent && (
-          <p className="text-xs text-neutral-500">Lieu éphémère : les dates du partenariat ci-dessous peuvent correspondre à la période d’ouverture du lieu.</p>
+        {shopType === 'ephemeral' && (
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-900 mb-1">Dates d'existence du lieu <span className="text-red-600">*</span></h2>
+            <p className="text-xs text-neutral-500 mb-2">Date de début et date de fin de l'existence physique du lieu (obligatoire pour un lieu éphémère).</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="existence-start" className="block text-sm font-medium text-neutral-700 mb-1">Date début <span className="text-red-600">*</span></label>
+                <input id="existence-start" type="date" value={existenceStartDate} onChange={(e) => setExistenceStartDate(e.target.value)} required={shopType === 'ephemeral'} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              </div>
+              <div>
+                <label htmlFor="existence-end" className="block text-sm font-medium text-neutral-700 mb-1">Date fin <span className="text-red-600">*</span></label>
+                <input id="existence-end" type="date" value={existenceEndDate} onChange={(e) => setExistenceEndDate(e.target.value)} min={existenceStartDate || undefined} required={shopType === 'ephemeral'} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              </div>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">Vos annonces de recrutement (Mes Annonces) devront s'inscrire dans cette période.</p>
+          </div>
         )}
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900 mb-1">Période du partenariat</h2>
-          <p className="text-xs text-neutral-500 mb-2">Date de début et date de fin du partenariat (pour lieu permanent ou éphémère).</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Date début</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Date fin</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || undefined} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-            </div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Valeurs (max {MAX_BADGES})</label>
+          <p className="text-xs text-neutral-500 mb-2">Sélectionnez jusqu'à {MAX_BADGES} badges pour afficher sur votre fiche boutique.</p>
+          <div className="flex flex-wrap gap-2">
+            {allBadges.map((badge) => {
+              const checked = selectedBadgeIds.includes(badge.id);
+              const disabled = !checked && selectedBadgeIds.length >= MAX_BADGES;
+              return (
+                <label
+                  key={badge.id}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm border cursor-pointer transition-colors ${
+                    checked
+                      ? 'bg-neutral-900 text-white border-neutral-900'
+                      : disabled
+                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                        : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => {
+                      setSelectedBadgeIds((prev) => {
+                        if (prev.includes(badge.id)) return prev.filter((id) => id !== badge.id);
+                        if (prev.length >= MAX_BADGES) return prev;
+                        return [...prev, badge.id];
+                      });
+                    }}
+                    className="sr-only"
+                  />
+                  <BadgeIcon badge={badge} className="w-4 h-3 shrink-0 inline-block" />
+                  <span>{badge.label}</span>
+                </label>
+              );
+            })}
           </div>
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-neutral-900 mb-1">Ouverture des candidatures</h2>
-          <p className="text-xs text-neutral-500 mb-2">Période pendant laquelle les marques peuvent cliquer sur « Candidater ». Vide = toujours ouvert.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Date d’ouverture</label>
-              <input type="date" value={candidatureOpenFrom} onChange={(e) => setCandidatureOpenFrom(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Date de clôture</label>
-              <input type="date" value={candidatureOpenTo} onChange={(e) => setCandidatureOpenTo(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
-            </div>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Publication</label>
-          <select value={publicationStatus} onChange={(e) => setPublicationStatus(e.target.value as 'draft' | 'published')} className="w-full max-w-[200px] px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900">
-            <option value="draft">Brouillon</option>
-            <option value="published">Publié</option>
-          </select>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex items-center gap-3 flex-wrap">
           <button
             type="submit"
-            disabled={saving || !hasChanges}
+            disabled={saving || !hasChanges || (shopType === 'ephemeral' && (!existenceStartDate?.trim() || !existenceEndDate?.trim()))}
             className="py-3 px-6 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -764,18 +817,21 @@ export default function ShowroomConfigPage() {
 
         <div className="lg:sticky lg:top-20">
           <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Aperçu côté marques</p>
+          <p className="text-xs text-neutral-500 mb-2">Période du partenariat, ouverture des candidatures et publication : gérées dans Mes Annonces.</p>
           <ShowroomFichePreview
             name={name}
             city={city}
             description={description}
             avatarUrl={avatarUrl}
             imageUrl={imageUrl}
-            isPermanent={isPermanent}
-            startDate={startDate}
-            endDate={endDate}
-            candidatureOpenFrom={candidatureOpenFrom}
-            candidatureOpenTo={candidatureOpenTo}
+            shopType={shopType}
+            existenceStartDate={shopType === 'ephemeral' ? existenceStartDate : undefined}
+            existenceEndDate={shopType === 'ephemeral' ? existenceEndDate : undefined}
+            candidatureOpenFrom=""
+            candidatureOpenTo=""
             commissionOptions={commissionOptions}
+            badges={allBadges.filter((b) => selectedBadgeIds.includes(b.id))}
+            ownerView
           />
         </div>
       </div>

@@ -16,7 +16,7 @@ const key = supabaseAnonKey || 'placeholder';
 
 export const supabase: SupabaseClient = createClient(url, key);
 
-// ——— Types alignés sur tables.supabase ———
+// --- Types alignés sur tables.supabase ---
 
 export type Brand = {
   id: number;
@@ -61,7 +61,10 @@ export type Showroom = {
   traffic_level: string | null;
   instagram_handle: string | null;
   is_verified: boolean | null;
+  /** Type d'établissement : identité de la boutique. Définit si les annonces sont contraintes par des dates d'existence. */
+  shop_type: 'permanent' | 'ephemeral' | null;
   is_permanent: boolean | null;
+  /** Pour lieu éphémère : dates d'existence physique du lieu (obligatoires). Inutilisées si permanent. */
   start_date: string | null;
   end_date: string | null;
   /** Période d'ouverture des candidatures : le bouton Candidater n'est actif qu'entre ces deux dates (inclus). Null = pas de restriction. */
@@ -79,7 +82,30 @@ export type Showroom = {
   phone: string | null;
 };
 
+export type Badge = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+  sort_order: number | null;
+};
+
 export type RentPeriod = 'week' | 'month' | 'one_off';
+
+export type ListingStatus = 'draft' | 'published' | 'archived';
+
+export type Listing = {
+  id: number;
+  showroom_id: number;
+  title: string;
+  status: ListingStatus;
+  partnership_start_date: string | null;
+  partnership_end_date: string | null;
+  application_open_date: string | null;
+  application_close_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
 
 export type ShowroomCommissionOption = {
   id: number;
@@ -150,11 +176,12 @@ export type CandidatureMessage = {
 /** @deprecated Table conversation_messages supprimée ; utiliser Message (table messages) avec conversation_id. */
 // export type ConversationMessage = { id: string; brand_id: number; showroom_id: number; sender_id: string; body: string; created_at: string | null; };
 
-// ——— Messagerie unifiée par événements (conversations + messages) ———
+// --- Messagerie unifiée par événements (conversations + messages) ---
 export type Conversation = {
   id: string;
   brand_id: number;
   showroom_id: number;
+  listing_id: number | null;
   updated_at: string | null;
 };
 
@@ -226,28 +253,4 @@ export type Notification = {
   created_at: string | null;
 };
 
-// ——— Paiements ———
-export type PaymentRequestType = 'sales' | 'rent';
-export type PaymentRequestStatus = 'pending' | 'accepted' | 'contested' | 'completed' | 'cancelled';
-export type PaymentInitiatorSide = 'showroom' | 'brand';
-
-export type PaymentRequest = {
-  id: string;
-  type: PaymentRequestType;
-  placement_id: string | null;
-  candidature_id: string | null;
-  counterpart_brand_id: number | null;
-  counterpart_showroom_id: number | null;
-  amount_cents: number;
-  platform_fee_cents: number;
-  currency: string;
-  status: PaymentRequestStatus;
-  initiator_side: PaymentInitiatorSide;
-  motif: string | null;
-  sales_report_attachment_url: string | null;
-  contest_note: string | null;
-  stripe_payment_intent_id: string | null;
-  stripe_platform_payment_intent_id: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
+// Paiements (flux marketplace) - désactivés, types retirés.

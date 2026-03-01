@@ -21,10 +21,6 @@ type Props = {
   onAcceptCandidature?: (messageId: string) => void;
   onDeclineCandidature?: (messageId: string) => void;
   onNegotiateCandidature?: (messageId: string) => void;
-  /** Demande de paiement : accepter / refuser / négocier (paymentRequestId pour mise à jour table payment_requests) */
-  onAcceptPayment?: (messageId: string, paymentRequestId: string) => void;
-  onDeclinePayment?: (messageId: string, paymentRequestId: string) => void;
-  onNegotiatePayment?: (messageId: string, paymentRequestId: string) => void;
 };
 
 function senderLabel(
@@ -60,9 +56,6 @@ export function MessageEntry({
   onAcceptCandidature,
   onDeclineCandidature,
   onNegotiateCandidature,
-  onAcceptPayment,
-  onDeclinePayment,
-  onNegotiatePayment,
 }: Props) {
   const label = senderLabel(message, isMe, myLabel, otherUserName, brandDisplayName, showroomDisplayName);
   const badge = senderBadge(message);
@@ -287,53 +280,6 @@ export function MessageEntry({
         </div>
       );
 
-    case 'PAYMENT_REQUEST': {
-      const amount = meta.amount_cents != null ? Number(meta.amount_cents) / 100 : null;
-      const paymentStatus = (meta.status as string) ?? 'pending';
-      const paymentRequestId = meta.payment_request_id as string | undefined;
-      const canRespondPayment = paymentRequestId && paymentStatus === 'pending' && viewerRole != null && message.sender_role !== viewerRole;
-      return (
-        <div className="flex w-full justify-center my-2">
-          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-amber-50/50 p-4 shadow-sm">
-            <p className="text-xs font-medium text-amber-800 uppercase tracking-wide">Demande de paiement</p>
-            {amount != null && <p className="text-sm font-semibold text-neutral-900 mt-1">{amount.toFixed(2)} €</p>}
-            {meta.motif && <p className="text-sm text-neutral-600 mt-0.5">{String(meta.motif)}</p>}
-            {canRespondPayment && (onAcceptPayment || onDeclinePayment || onNegotiatePayment) && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {onAcceptPayment && (
-                  <button type="button" onClick={() => onAcceptPayment(message.id, paymentRequestId)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">
-                    <CheckCircle className="h-4 w-4" /> Accepter
-                  </button>
-                )}
-                {onDeclinePayment && (
-                  <button type="button" onClick={() => onDeclinePayment(message.id, paymentRequestId)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50">
-                    <XCircle className="h-4 w-4" /> Refuser
-                  </button>
-                )}
-                {onNegotiatePayment && (
-                  <button type="button" onClick={() => onNegotiatePayment(message.id, paymentRequestId)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-50">
-                    <MessageCircle className="h-4 w-4" /> Négocier
-                  </button>
-                )}
-              </div>
-            )}
-            {!canRespondPayment && (
-              <p className="text-xs text-neutral-600 mt-1">
-                {paymentStatus === 'accepted' && 'Accepté'}
-                {paymentStatus === 'completed' && 'Paiement effectué'}
-                {paymentStatus === 'pending' && 'En attente'}
-                {paymentStatus === 'contested' && 'Contesté'}
-              </p>
-            )}
-            {meta.contest_note && paymentStatus === 'contested' && (
-              <p className="text-xs text-amber-800 bg-amber-100/80 rounded-lg px-2 py-1 mt-2">{String(meta.contest_note)}</p>
-            )}
-            <span className="text-[10px] text-neutral-400 mt-2 block">{timeStr}</span>
-          </div>
-        </div>
-      );
-    }
-
     case 'DEAL_ACCEPTED':
     case 'DEAL_DECLINED':
     case 'DEAL_EXPIRED':
@@ -355,6 +301,8 @@ export function MessageEntry({
       );
     }
 
+    case 'PAYMENT_REQUEST':
+      // Paiements désactivés (modèle 100 % leads) - affichage neutre
     default:
       return (
         <div className="flex w-full justify-center my-2">

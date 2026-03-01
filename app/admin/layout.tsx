@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard, Search, Coins } from 'lucide-react';
+import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, Search, Coins, FileText } from 'lucide-react';
 import { AdminEntityProvider, useAdminEntity } from './context/AdminEntityContext';
 import { useUnreadMessagesCount } from '@/lib/hooks/useUnreadMessagesCount';
 import { MessengerPanelProvider } from './context/MessengerPanelContext';
@@ -51,16 +51,15 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin/credits', label: 'Crédits', icon: Coins },
     { href: '/admin/placements', label: 'Mes partenariats', icon: LayoutGrid },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
-    { href: '/admin/payments', label: 'Mes paiements', icon: CreditCard },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   ];
   const showroomNav = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/showroom-config', label: 'Ma boutique', icon: Settings },
+    { href: '/admin/listings', label: 'Mes Annonces', icon: FileText },
     { href: '/admin/curation', label: 'Mes partenariats', icon: LayoutGrid },
     { href: '/admin/browse-brands', label: 'Parcourir les marques', icon: Search },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
-    { href: '/admin/payments', label: 'Mes paiements', icon: CreditCard },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   ];
   const navItems = entityType === 'brand' ? brandNav : entityType === 'showroom' ? showroomNav : [{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard }];

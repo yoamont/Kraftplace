@@ -58,7 +58,7 @@ function lastMessageLabel(type: string | null, content: string | null): string {
     case 'CONTRAT':
       return 'Contrat';
     case 'PAYMENT_REQUEST':
-      return 'Demande de paiement';
+      return 'Message';
     case 'DOCUMENT':
       return 'Document partagé';
     default:

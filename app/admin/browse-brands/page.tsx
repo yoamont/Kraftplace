@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { supabase } from '@/lib/supabase';
 import { Package, Loader2, ArrowRight } from 'lucide-react';
-import type { Brand, Product } from '@/lib/supabase';
+import type { Brand, Product, Badge } from '@/lib/supabase';
+import { BrandCard } from '../components/cards/BrandCard';
 
 export default function BrowseBrandsPage() {
   const { entityType } = useAdminEntity();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [productsByBrandId, setProductsByBrandId] = useState<Record<number, Product[]>>({});
+  const [badgesByBrandId, setBadgesByBrandId] = useState<Record<number, Badge[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,10 +25,11 @@ export default function BrowseBrandsPage() {
       if (brandIds.length === 0) {
         setBrands([]);
         setProductsByBrandId({});
+        setBadgesByBrandId({});
         setLoading(false);
         return;
       }
-      const [brandsRes, productsRes] = await Promise.all([
+      const [brandsRes, productsRes, { data: badgesData }, { data: brandBadgesData }] = await Promise.all([
         supabase
           .from('brands')
           .select('id, brand_name, avatar_url, description, image_url')
@@ -37,6 +40,8 @@ export default function BrowseBrandsPage() {
           .select('id, brand_id, product_name, image_url, price')
           .in('brand_id', brandIds)
           .order('created_at', { ascending: false }),
+        supabase.from('badges').select('*').order('sort_order'),
+        supabase.from('brand_badges').select('brand_id, badge_id').in('brand_id', brandIds),
       ]);
       const brandsList = (brandsRes.data as Brand[]) ?? [];
       setBrands(brandsList);
@@ -47,6 +52,18 @@ export default function BrowseBrandsPage() {
         if (byBrand[p.brand_id].length < 3) byBrand[p.brand_id].push(p);
       }
       setProductsByBrandId(byBrand);
+      const badgesList = (badgesData as Badge[]) ?? [];
+      const badgeMap = Object.fromEntries(badgesList.map((b) => [b.id, b]));
+      const bbList = (brandBadgesData as { brand_id: number; badge_id: number }[]) ?? [];
+      const badgesByBrand: Record<number, Badge[]> = {};
+      for (const bb of bbList) {
+        const badge = badgeMap[bb.badge_id];
+        if (badge) {
+          if (!badgesByBrand[bb.brand_id]) badgesByBrand[bb.brand_id] = [];
+          badgesByBrand[bb.brand_id].push(badge);
+        }
+      }
+      setBadgesByBrandId(badgesByBrand);
       setLoading(false);
     })();
   }, []);
@@ -76,73 +93,20 @@ export default function BrowseBrandsPage() {
         {brands.map((brand) => {
           const topProducts = productsByBrandId[brand.id] ?? [];
           return (
-            <article
+            <BrandCard
               key={brand.id}
-              className="rounded-xl border-2 border-kraft-300 bg-kraft-50 overflow-hidden shadow-sm flex flex-col"
+              brand={brand}
+              products={topProducts}
+              badges={badgesByBrandId[brand.id] ?? []}
             >
-              <div className="aspect-[3/1] bg-kraft-200">
-                {brand.image_url?.trim() ? (
-                  <img src={brand.image_url.trim()} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-kraft-600">
-                    <Package className="h-8 w-8" />
-                  </div>
-                )}
-              </div>
-              <div className="p-4 flex-1 flex flex-col">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-kraft-200 shrink-0 overflow-hidden flex items-center justify-center border-2 border-kraft-300">
-                    {brand.avatar_url?.trim() ? (
-                      <img src={brand.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="h-6 w-6 text-kraft-600" />
-                    )}
-                  </div>
-                  <h2 className="font-semibold text-kraft-black truncate">{brand.brand_name}</h2>
-                </div>
-                {brand.description?.trim() && (
-                  <p className="mt-2 text-sm text-kraft-700 line-clamp-2">{brand.description.trim()}</p>
-                )}
-                {topProducts.length > 0 && (
-                  <div className="mt-3">
-                    <div className="flex gap-2">
-                      {topProducts.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={`/marque/${brand.id}#produits`}
-                          className="flex-1 min-w-0 flex flex-col rounded-lg border border-kraft-300 bg-white overflow-hidden hover:border-kraft-500 transition-colors"
-                        >
-                          <div className="aspect-square bg-kraft-200">
-                            {product.image_url?.trim() ? (
-                              <img src={product.image_url.trim()} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="h-6 w-6 text-kraft-500" />
-                              </div>
-                            )}
-                          </div>
-                          <p className="p-1.5 text-xs font-medium text-kraft-800 truncate text-center" title={product.product_name}>
-                            {product.product_name}
-                          </p>
-                          {product.price != null && (
-                            <p className="px-1.5 pb-1.5 text-xs font-semibold text-kraft-700 text-center">
-                              {Number(product.price).toFixed(2)} €
-                            </p>
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <Link
-                  href={`/marque/${brand.id}`}
-                  className="mt-4 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-kraft-black text-kraft-off-white text-sm font-medium hover:bg-kraft-900 transition-colors"
-                >
-                  Voir plus
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </article>
+              <Link
+                href={`/marque/${brand.id}`}
+                className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
+              >
+                Voir plus
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </BrandCard>
           );
         })}
       </div>

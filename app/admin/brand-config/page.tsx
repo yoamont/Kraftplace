@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { ArrowLeft, Loader2, Check, Upload, ImageIcon, FileText } from 'lucide-react';
-import type { Brand } from '@/lib/supabase';
+import type { Brand, Badge } from '@/lib/supabase';
 import { BrandFichePreview } from '../components/BrandFichePreview';
+import { BadgeIcon } from '../components/BadgeIcon';
 
 const BRAND_ASSETS_BUCKET = 'brand-assets';
 const BRAND_DOCUMENTS_BUCKET = 'brand-documents';
@@ -52,25 +53,38 @@ export default function BrandConfigPage() {
   const [phone, setPhone] = useState('');
   const [rcProAttestationPath, setRcProAttestationPath] = useState<string | null>(null);
   const [rcProSignedUrl, setRcProSignedUrl] = useState<string | null>(null);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([]);
+  const [initialBadgeIds, setInitialBadgeIds] = useState<number[]>([]);
+
+  const MAX_BADGES = 5;
 
   useEffect(() => {
     if (entityType !== 'brand' || !activeBrand) {
       setLoading(false);
       return;
     }
-    setBrandName(activeBrand.brand_name ?? '');
-    setDescription(activeBrand.description ?? '');
-    setAvatarUrl(activeBrand.avatar_url ?? '');
-    setImageUrl(activeBrand.image_url ?? '');
-    setLegalStatus(activeBrand.legal_status ?? '');
-    setLegalStatusOther(activeBrand.legal_status_other ?? '');
-    setCompanyName(activeBrand.company_name ?? '');
-    setRegisteredAddress(activeBrand.registered_address ?? '');
-    setSiret(activeBrand.siret ?? '');
-    setEmail(activeBrand.email ?? '');
-    setPhone(activeBrand.phone ?? '');
-    setRcProAttestationPath(activeBrand.rc_pro_attestation_path ?? null);
-    setLoading(false);
+    (async () => {
+      setBrandName(activeBrand.brand_name ?? '');
+      setDescription(activeBrand.description ?? '');
+      setAvatarUrl(activeBrand.avatar_url ?? '');
+      setImageUrl(activeBrand.image_url ?? '');
+      setLegalStatus(activeBrand.legal_status ?? '');
+      setLegalStatusOther(activeBrand.legal_status_other ?? '');
+      setCompanyName(activeBrand.company_name ?? '');
+      setRegisteredAddress(activeBrand.registered_address ?? '');
+      setSiret(activeBrand.siret ?? '');
+      setEmail(activeBrand.email ?? '');
+      setPhone(activeBrand.phone ?? '');
+      setRcProAttestationPath(activeBrand.rc_pro_attestation_path ?? null);
+      const { data: badgesData } = await supabase.from('badges').select('*').order('sort_order');
+      setAllBadges((badgesData as Badge[]) ?? []);
+      const { data: brandBadgesData } = await supabase.from('brand_badges').select('badge_id').eq('brand_id', activeBrand.id);
+      const ids = ((brandBadgesData as { badge_id: number }[]) ?? []).map((r) => r.badge_id);
+      setSelectedBadgeIds(ids);
+      setInitialBadgeIds(ids);
+      setLoading(false);
+    })();
   }, [entityType, activeBrand]);
 
   useEffect(() => {
@@ -178,7 +192,9 @@ export default function BrandConfigPage() {
       representativeName.trim() !== (activeBrand.representative_name ?? '') ||
       email.trim() !== (activeBrand.email ?? '') ||
       phone.trim() !== (activeBrand.phone ?? '') ||
-      (rcProAttestationPath ?? '') !== (activeBrand.rc_pro_attestation_path ?? ''));
+      (rcProAttestationPath ?? '') !== (activeBrand.rc_pro_attestation_path ?? '') ||
+      selectedBadgeIds.length !== initialBadgeIds.length ||
+      selectedBadgeIds.some((id, i) => initialBadgeIds[i] !== id));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -208,12 +224,31 @@ export default function BrandConfigPage() {
         setError(err.message);
         return;
       }
+      await supabase.from('brand_badges').delete().eq('brand_id', activeBrand.id);
+      if (selectedBadgeIds.length > 0) {
+        const { error: errBadges } = await supabase
+          .from('brand_badges')
+          .insert(selectedBadgeIds.map((badge_id) => ({ brand_id: activeBrand.id, badge_id })));
+        if (errBadges) {
+          setError(errBadges.message);
+          return;
+        }
+      }
+      setInitialBadgeIds(selectedBadgeIds);
       setSavedSuccess(true);
       await refresh();
       router.refresh();
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleBadge(badgeId: number) {
+    setSelectedBadgeIds((prev) => {
+      if (prev.includes(badgeId)) return prev.filter((id) => id !== badgeId);
+      if (prev.length >= MAX_BADGES) return prev;
+      return [...prev, badgeId];
+    });
   }
 
   if (loading) {
@@ -329,6 +364,39 @@ export default function BrandConfigPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Valeurs (max {MAX_BADGES})</label>
+          <p className="text-xs text-neutral-500 mb-2">Sélectionnez jusqu'à {MAX_BADGES} badges pour afficher sur votre fiche marque.</p>
+          <div className="flex flex-wrap gap-2">
+            {allBadges.map((badge) => {
+              const checked = selectedBadgeIds.includes(badge.id);
+              const disabled = !checked && selectedBadgeIds.length >= MAX_BADGES;
+              return (
+                <label
+                  key={badge.id}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm border cursor-pointer transition-colors ${
+                    checked
+                      ? 'bg-neutral-900 text-white border-neutral-900'
+                      : disabled
+                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                        : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggleBadge(badge.id)}
+                    className="sr-only"
+                  />
+                  <BadgeIcon badge={badge} className="w-4 h-3 shrink-0 inline-block" />
+                  <span>{badge.label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
@@ -490,6 +558,7 @@ export default function BrandConfigPage() {
             avatarUrl={avatarUrl.trim() || null}
             imageUrl={imageUrl.trim() || null}
             brandId={activeBrand.id}
+            badges={allBadges.filter((b) => selectedBadgeIds.includes(b.id))}
             linkToCollection
           />
         </div>

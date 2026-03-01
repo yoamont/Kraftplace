@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Send, MessageCircle, Store, LayoutGrid, CreditCard, Sparkles } from 'lucide-react';
+import { Send, MessageCircle, Store, LayoutGrid, Sparkles } from 'lucide-react';
 import { ButtonBrand } from '@/components/landing/ButtonBrand';
 import { ButtonShowroom } from '@/components/landing/ButtonShowroom';
 
@@ -46,7 +46,7 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        {/* Hero — esprit Vinted B2B */}
+        {/* Hero - esprit Vinted B2B */}
         <section className="px-4 py-16 sm:py-24 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-kraft-black tracking-tight max-w-4xl mx-auto leading-tight">
             Kraftplace, la plateforme qui va vous faire adorer le commerce en direct.
@@ -65,10 +65,10 @@ export default function HomePage() {
             </ButtonShowroom>
           </div>
 
-          {/* Sélection immersive Marque / Boutique — design premium */}
+          {/* Sélection immersive Marque / Boutique - design premium */}
           <section className="mt-16 sm:mt-24 lg:mt-28" aria-label="Choisir votre profil">
             <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* Carte Marque — atelier minimaliste */}
+              {/* Carte Marque - atelier minimaliste */}
               <Link
                 href="/#marques"
                 className="group relative flex min-h-[380px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-kraft-black focus-visible:ring-offset-2"
@@ -97,7 +97,7 @@ export default function HomePage() {
                 </div>
               </Link>
 
-              {/* Carte Boutique — boutique créateur lumineuse */}
+              {/* Carte Boutique - boutique créateur lumineuse */}
               <Link
                 href="/#boutiques"
                 className="group relative flex min-h-[380px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-kraft-black focus-visible:ring-offset-2"
@@ -165,13 +165,13 @@ export default function HomePage() {
               </div>
               <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
                 <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">3</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Jour de paie !</h3>
+                <h3 className="mt-4 font-bold text-kraft-black text-lg">Chat ouvert</h3>
                 <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Vendez vos produits et recevez votre argent en toute sécurité via Stripe Connect dès que la boutique valide la vente.
+                  Une fois votre candidature acceptée, échangez librement avec la boutique et développez votre réseau de points de vente.
                 </p>
                 <div className="mt-3">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <CreditCard className="h-3.5 w-3.5" /> Paiement sécurisé Stripe
+                    <MessageCircle className="h-3.5 w-3.5" /> Dialogue direct
                   </span>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Bannière de conclusion — Prêt à vous lancer ? */}
+        {/* Bannière de conclusion - Prêt à vous lancer ? */}
         <section className="px-4 py-14 sm:py-20 border-t border-kraft-900 bg-kraft-black text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-kraft-off-white tracking-tight max-w-xl mx-auto">
             Prêt à vous lancer ?
