@@ -3,7 +3,18 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+// En dev, refuser d'utiliser le placeholder pour éviter des requêtes vers une URL fictive
+const isPlaceholder = !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('placeholder');
+if (typeof window !== 'undefined' && isPlaceholder) {
+  console.error(
+    '[Supabase] Variables manquantes. Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local puis redémarre le serveur (npm run dev).'
+  );
+}
+
+const url = supabaseUrl || 'https://placeholder.supabase.co';
+const key = supabaseAnonKey || 'placeholder';
+
+export const supabase: SupabaseClient = createClient(url, key);
 
 // ——— Types alignés sur tables.supabase ———
 
@@ -29,6 +40,10 @@ export type Brand = {
   phone: string | null;
   /** Chemin du fichier attestation RC Pro (bucket brand-documents, privé) */
   rc_pro_attestation_path: string | null;
+  /** Crédits achetés (packs Stripe), incrémentés par le webhook */
+  credits: number | null;
+  /** Crédits réservés (candidatures en attente), débités à l'acceptation */
+  reserved_credits: number | null;
 };
 
 export type Showroom = {
@@ -103,7 +118,7 @@ export type Placement = {
   created_at: string | null;
 };
 
-export type CandidatureStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+export type CandidatureStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 
 export type Candidature = {
   id: string;

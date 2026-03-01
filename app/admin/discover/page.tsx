@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { getOrCreateConversationId } from '@/lib/conversations';
 import { useAdminEntity } from '../context/AdminEntityContext';
-import { Store, Loader2, Send, X, Info, MessageSquare } from 'lucide-react';
+import { Store, Loader2, Send, X, Info, Coins } from 'lucide-react';
 import type { Showroom, ShowroomCommissionOption } from '@/lib/supabase';
-import { ContactShowroomButton } from '@/components/messaging/ContactShowroomButton';
 import { getCandidatureWindowStatus, getCandidatureDaysLeft, formatCandidaturePeriodLabel } from '@/app/admin/components/ShowroomFichePreview';
+import { CreditsRechargeModal } from '@/app/admin/components/CreditsRechargeModal';
 
 function rentPeriodLabel(period: string | null): string {
   if (period === 'week') return '/sem.';
@@ -43,7 +44,7 @@ function formatShowroomDates(start: string | null, end: string | null): string {
 
 export default function DiscoverPage() {
   const router = useRouter();
-  const { entityType, activeBrand, userId } = useAdminEntity();
+  const { entityType, activeBrand, userId, refresh } = useAdminEntity();
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalShowroom, setModalShowroom] = useState<Showroom | null>(null);
@@ -53,9 +54,18 @@ export default function DiscoverPage() {
   const [isNegotiation, setIsNegotiation] = useState(false);
   const [negotiationMessage, setNegotiationMessage] = useState('');
   const [motivationMessage, setMotivationMessage] = useState('');
-  const [partnershipStartDate, setPartnershipStartDate] = useState('');
-  const [partnershipEndDate, setPartnershipEndDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [confirmModalShowroom, setConfirmModalShowroom] = useState<Showroom | null>(null);
+  const [showSlotsFullModal, setShowSlotsFullModal] = useState(false);
+  type CandidatureInfo = { conversationId: string; status: 'pending' | 'accepted' | 'rejected' };
+  const [candidatureByShowroomId, setCandidatureByShowroomId] = useState<Record<number, CandidatureInfo>>({});
+
+  const credits = typeof activeBrand?.credits === 'number' ? activeBrand.credits : 0;
+  const reserved = typeof (activeBrand as { reserved_credits?: number } | undefined)?.reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+  const available = credits - reserved;
+  const slotsFull = credits > 0 && available < 1;
+  const noCredits = credits === 0;
 
   useEffect(() => {
     (async () => {
@@ -81,6 +91,55 @@ export default function DiscoverPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!activeBrand?.id || entityType !== 'brand') {
+      setCandidatureByShowroomId({});
+      return;
+    }
+    (async () => {
+      const { data: convs } = await supabase
+        .from('conversations')
+        .select('id, showroom_id')
+        .eq('brand_id', activeBrand.id);
+      const list = (convs as { id: string; showroom_id: number }[]) ?? [];
+      if (list.length === 0) {
+        setCandidatureByShowroomId({});
+        return;
+      }
+      const convIds = list.map((c) => c.id);
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('id, conversation_id, type, created_at, metadata')
+        .in('conversation_id', convIds)
+        .in('type', ['CANDIDATURE_SENT', 'CANDIDATURE_ACCEPTED', 'CANDIDATURE_REFUSED'])
+        .order('created_at', { ascending: true });
+      const messages = (msgs as { id: string; conversation_id: string; type: string; created_at: string; metadata: Record<string, unknown> | null }[]) ?? [];
+      const byConv = new Map<string, typeof messages>();
+      for (const m of messages) {
+        if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, []);
+        byConv.get(m.conversation_id)!.push(m);
+      }
+      const byShowroom: Record<number, CandidatureInfo> = {};
+      for (const c of list) {
+        const ms = byConv.get(c.id) ?? [];
+        const sentIdx = ms.findIndex((m) => m.type === 'CANDIDATURE_SENT');
+        if (sentIdx === -1) continue;
+        const acceptedAfter = ms.slice(sentIdx + 1).some((m) => m.type === 'CANDIDATURE_ACCEPTED');
+        const refusedAfter = ms.slice(sentIdx + 1).some((m) => m.type === 'CANDIDATURE_REFUSED');
+        const lastSent = ms[sentIdx];
+        const meta = (lastSent.metadata ?? {}) as { status?: string };
+        if (acceptedAfter) {
+          byShowroom[c.showroom_id] = { conversationId: c.id, status: 'accepted' };
+        } else if (refusedAfter || meta.status === 'rejected' || meta.status === 'cancelled') {
+          byShowroom[c.showroom_id] = { conversationId: c.id, status: 'rejected' };
+        } else {
+          byShowroom[c.showroom_id] = { conversationId: c.id, status: 'pending' };
+        }
+      }
+      setCandidatureByShowroomId(byShowroom);
+    })();
+  }, [activeBrand?.id, entityType]);
+
   async function openModal(showroom: Showroom) {
     setModalShowroom(showroom);
     setModalCommissionOptions(null);
@@ -88,8 +147,6 @@ export default function DiscoverPage() {
     setIsNegotiation(false);
     setNegotiationMessage('');
     setMotivationMessage('');
-    setPartnershipStartDate('');
-    setPartnershipEndDate('');
     const { data } = await supabase
       .from('showroom_commission_options')
       .select('*')
@@ -98,12 +155,30 @@ export default function DiscoverPage() {
     setModalCommissionOptions((data as ShowroomCommissionOption[]) ?? []);
   }
 
+  function handleCandidaterClick(showroom: Showroom) {
+    if (!activeBrand) return;
+    if (noCredits) {
+      setShowRechargeModal(true);
+      return;
+    }
+    if (slotsFull) {
+      setShowSlotsFullModal(true);
+      return;
+    }
+    setConfirmModalShowroom(showroom);
+  }
+
+  function handleConfirmCandidature() {
+    if (!confirmModalShowroom) return;
+    openModal(confirmModalShowroom);
+    setConfirmModalShowroom(null);
+  }
+
   async function submitCandidature() {
     if (!activeBrand || !modalShowroom || !userId) return;
     const hasOption = selectedOptionId != null && !isNegotiation;
     const hasNegotiation = isNegotiation && negotiationMessage.trim().length > 0;
     if (!hasOption && !hasNegotiation) return;
-    if (!partnershipStartDate.trim() || !partnershipEndDate.trim()) return;
     setSubmitting(true);
     try {
       const conversationId = await getOrCreateConversationId(activeBrand.id, modalShowroom.id);
@@ -112,16 +187,8 @@ export default function DiscoverPage() {
         return;
       }
 
-      const startAt = new Date(partnershipStartDate);
-      startAt.setHours(0, 0, 0, 0);
-      const endAt = new Date(partnershipEndDate);
-      endAt.setHours(23, 59, 59, 999);
-      const expiresAt = endAt.toISOString();
       const metadata: Record<string, unknown> = {
         status: 'pending',
-        partnership_start_at: startAt.toISOString(),
-        partnership_end_at: endAt.toISOString(),
-        expires_at: expiresAt,
       };
       if (hasOption && modalCommissionOptions) {
         const opt = modalCommissionOptions.find((o) => o.id === selectedOptionId);
@@ -148,6 +215,10 @@ export default function DiscoverPage() {
         metadata,
         is_read: false,
       });
+
+      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+      await supabase.from('brands').update({ reserved_credits: reserved + 1 }).eq('id', activeBrand.id);
+      await refresh();
 
       if (motivationMessage.trim()) {
         await supabase.from('messages').insert({
@@ -214,6 +285,11 @@ export default function DiscoverPage() {
                         ? `Éphémère · ${formatShowroomDates(s.start_date, s.end_date)}`
                         : 'Éphémère'}
                   </p>
+                  {s.is_permanent !== false && (s.start_date || s.end_date) && (
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Partenariat : {formatShowroomDates(s.start_date, s.end_date)}
+                    </p>
+                  )}
                 </div>
               </div>
               {s.description && <p className="text-sm text-neutral-600 mt-2 line-clamp-2">{s.description}</p>}
@@ -254,15 +330,72 @@ export default function DiscoverPage() {
                 ) : null;
               })()}
               <div className="mt-4 flex flex-col gap-2">
-                {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'open' ? (
-                  <button
-                    type="button"
-                    onClick={() => openModal(s)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
-                  >
-                    <Send className="h-4 w-4" />
-                    Candidater
-                  </button>
+                {candidatureByShowroomId[s.id] ? (
+                  (() => {
+                    const cand = candidatureByShowroomId[s.id];
+                    if (cand.status === 'pending') {
+                      return (
+                        <div
+                          className="w-full flex flex-col items-center gap-1.5 py-2.5 rounded-xl border border-amber-200 bg-amber-50/80 text-amber-800 text-sm"
+                          title="Nous vous préviendrons dès que la boutique aura répondu."
+                        >
+                          <span className="font-medium">🕒 Candidature en attente</span>
+                          <span className="text-xs text-amber-700/90">Nous vous préviendrons dès que la boutique aura répondu.</span>
+                          <Link href={`/messages?conversationId=${cand.conversationId}`} className="text-xs font-medium text-amber-800 underline hover:no-underline">
+                            Voir la conversation
+                          </Link>
+                        </div>
+                      );
+                    }
+                    if (cand.status === 'accepted') {
+                      return (
+                        <div className="w-full flex flex-col items-center gap-1.5 py-2.5 rounded-lg border border-green-200 bg-green-50 text-green-800 text-sm">
+                          <span className="font-medium">Validée – Chat ouvert</span>
+                          <Link href={`/messages?conversationId=${cand.conversationId}`} className="text-xs font-medium underline hover:no-underline">
+                            Voir la conversation
+                          </Link>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="w-full flex flex-col items-center gap-1.5 py-2.5 rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-600 text-sm">
+                        <span className="font-medium">Refusée – Crédit libéré</span>
+                        {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'open' && (
+                          <button type="button" onClick={() => handleCandidaterClick(s)} className="text-xs font-medium text-neutral-900 underline hover:no-underline">
+                            Candidater à nouveau
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()
+                ) : getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'open' ? (
+                  noCredits ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowRechargeModal(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-200 text-neutral-500 text-sm font-medium cursor-pointer hover:bg-neutral-300 transition-colors"
+                    >
+                      <Coins className="h-4 w-4" />
+                      Plus de crédits
+                    </button>
+                  ) : slotsFull ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowSlotsFullModal(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-200 text-neutral-500 text-sm font-medium cursor-pointer hover:bg-neutral-300 transition-colors"
+                    >
+                      Slots pleins
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleCandidaterClick(s)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
+                    >
+                      <Coins className="h-4 w-4" />
+                      Candidater (1 crédit)
+                    </button>
+                  )
                 ) : (
                   <div
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium ${
@@ -274,13 +407,6 @@ export default function DiscoverPage() {
                     {getCandidatureWindowStatus(s.candidature_open_from, s.candidature_open_to) === 'upcoming' ? 'À venir' : 'Terminé'}
                   </div>
                 )}
-                <ContactShowroomButton
-                  showroomId={s.id}
-                  brandId={activeBrand.id}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-50"
-                >
-                  Contacter la boutique
-                </ContactShowroomButton>
               </div>
             </div>
           </article>
@@ -298,19 +424,9 @@ export default function DiscoverPage() {
             <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden pointer-events-auto flex flex-col" role="dialog" aria-modal="true" aria-labelledby="modal-title">
               <div className="p-4 border-b border-neutral-200 flex items-center justify-between gap-3">
                 <h2 id="modal-title" className="text-lg font-semibold text-neutral-900 truncate">Candidater · {modalShowroom.name}</h2>
-                <div className="flex items-center gap-2 shrink-0">
-                  <ContactShowroomButton
-                    showroomId={modalShowroom.id}
-                    brandId={activeBrand.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-50"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Contacter
-                  </ContactShowroomButton>
-                  <button type="button" onClick={() => setModalShowroom(null)} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900" aria-label="Fermer">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
+                <button type="button" onClick={() => setModalShowroom(null)} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 shrink-0" aria-label="Fermer">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
               <div className="p-4 overflow-y-auto flex-1 space-y-4">
                 <p className="text-sm text-neutral-600">Choisissez l’option de rémunération qui vous convient, ou proposez un autre tarif.</p>
@@ -360,33 +476,6 @@ export default function DiscoverPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-neutral-900 mb-2">Période du partenariat</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block">
-                      <span className="text-xs text-neutral-600 block mb-1">Date de début</span>
-                      <input
-                        type="date"
-                        value={partnershipStartDate}
-                        onChange={(e) => setPartnershipStartDate(e.target.value)}
-                        min={new Date().toISOString().slice(0, 10)}
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs text-neutral-600 block mb-1">Date de fin</span>
-                      <input
-                        type="date"
-                        value={partnershipEndDate}
-                        onChange={(e) => setPartnershipEndDate(e.target.value)}
-                        min={partnershipStartDate || new Date().toISOString().slice(0, 10)}
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-0.5">L’offre pourra être acceptée jusqu’à la date de fin du partenariat.</p>
-                </div>
-
-                <div>
                   <label htmlFor="motivation" className="block text-sm font-medium text-neutral-900 mb-1">Message (optionnel)</label>
                   <textarea
                     id="motivation"
@@ -410,6 +499,90 @@ export default function DiscoverPage() {
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Envoyer la candidature
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showRechargeModal && (
+        <CreditsRechargeModal
+          onClose={() => setShowRechargeModal(false)}
+          title="Recharger mes crédits"
+          introMessage="Vous n'avez plus de crédits disponibles. Prenez un pack pour continuer à développer votre réseau."
+        />
+      )}
+
+      {showSlotsFullModal && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" aria-hidden onClick={() => setShowSlotsFullModal(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 pointer-events-auto space-y-4">
+              <h3 className="text-lg font-semibold text-neutral-900">Slots de candidature complets</h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Vos slots de candidature sont pleins. Libérez-en un ou augmentez votre capacité pour continuer.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Link
+                  href="/messages"
+                  className="flex-1 text-center py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
+                >
+                  Voir mes conversations
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => { setShowSlotsFullModal(false); setShowRechargeModal(true); }}
+                  className="flex-1 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
+                >
+                  Recharger des crédits
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSlotsFullModal(false)}
+                className="w-full py-2 text-sm text-neutral-500 hover:text-neutral-700"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {confirmModalShowroom && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" aria-hidden onClick={() => setConfirmModalShowroom(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 pointer-events-auto space-y-5">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                Envoyer ma candidature à {confirmModalShowroom.name}
+              </h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Cette action utilise 1 crédit. Votre crédit ne sera débité que si la boutique accepte votre demande et ouvre la messagerie. En attendant, ce crédit sera « réservé ».
+              </p>
+              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4 space-y-1">
+                <p className="text-sm text-neutral-700">
+                  Votre solde : <span className="font-semibold">{credits} ✨</span>
+                </p>
+                <p className="text-sm text-neutral-700">
+                  Solde après validation : <span className="font-semibold">{credits - 1} ✨</span>
+                </p>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModalShowroom(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCandidature}
+                  className="flex-1 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
+                >
+                  Confirmer
                 </button>
               </div>
             </div>

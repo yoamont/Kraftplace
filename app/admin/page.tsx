@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useAdminEntity } from './context/AdminEntityContext';
-import { Sparkles, Store, Package, Settings, LayoutGrid, ChevronRight, MessageSquare, Bell, Building2 } from 'lucide-react';
+import { Sparkles, Store, Package, Settings, LayoutGrid, ChevronRight, MessageSquare, Bell, Building2, Coins } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const { brands, showrooms, entityType, activeBrand, activeShowroom, loading } = useAdminEntity();
@@ -62,6 +62,27 @@ export default function AdminDashboardPage() {
       <p className="mt-1 text-kraft-700 text-sm">
         {isBrand ? 'Catalogue et boutiques.' : isShowroom ? 'Configuration et demandes.' : 'Sélectionnez une entité dans le menu.'}
       </p>
+      {isBrand && (
+        <div className="mt-4 flex items-center gap-2">
+          {(() => {
+            const credits = typeof activeBrand.credits === 'number' ? activeBrand.credits : 0;
+            const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+            const available = credits - reserved;
+            return available > 0 ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-kraft-100 text-kraft-800 text-sm font-medium">
+                <Coins className="h-4 w-4" />
+                ✨ {available} candidature{available !== 1 ? 's' : ''} disponible{available !== 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-sm font-medium">
+                <Coins className="h-4 w-4" />
+                0 crédits restants
+                <Link href="/admin/credits" className="underline font-semibold hover:text-red-800 ml-0.5">Recharger</Link>
+              </span>
+            );
+          })()}
+        </div>
+      )}
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {isBrand && (
           <>

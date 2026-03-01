@@ -340,8 +340,8 @@ export default function ShowroomConfigPage() {
           default_commission_rate: null,
           instagram_handle: instagramHandle.trim() || null,
           is_permanent: isPermanent,
-          start_date: isPermanent ? null : startDate || null,
-          end_date: isPermanent ? null : endDate || null,
+          start_date: startDate?.trim() || null,
+          end_date: endDate?.trim() || null,
           candidature_open_from: candidatureOpenFrom.trim() || null,
           candidature_open_to: candidatureOpenTo.trim() || null,
           publication_status: publicationStatus,
@@ -703,6 +703,11 @@ export default function ShowroomConfigPage() {
           <label htmlFor="permanent" className="text-sm text-neutral-700">Lieu permanent</label>
         </div>
         {!isPermanent && (
+          <p className="text-xs text-neutral-500">Lieu éphémère : les dates du partenariat ci-dessous peuvent correspondre à la période d’ouverture du lieu.</p>
+        )}
+        <div>
+          <h2 className="text-sm font-semibold text-neutral-900 mb-1">Période du partenariat</h2>
+          <p className="text-xs text-neutral-500 mb-2">Date de début et date de fin du partenariat (pour lieu permanent ou éphémère).</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Date début</label>
@@ -710,10 +715,10 @@ export default function ShowroomConfigPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Date fin</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || undefined} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
             </div>
           </div>
-        )}
+        </div>
         <div>
           <h2 className="text-sm font-semibold text-neutral-900 mb-1">Ouverture des candidatures</h2>
           <p className="text-xs text-neutral-500 mb-2">Période pendant laquelle les marques peuvent cliquer sur « Candidater ». Vide = toujours ouvert.</p>
@@ -771,10 +776,6 @@ export default function ShowroomConfigPage() {
             candidatureOpenFrom={candidatureOpenFrom}
             candidatureOpenTo={candidatureOpenTo}
             commissionOptions={commissionOptions}
-            companyName={companyName.trim() || undefined}
-            representativeName={representativeName.trim() || undefined}
-            email={email.trim() || undefined}
-            phone={phone.trim() || undefined}
           />
         </div>
       </div>

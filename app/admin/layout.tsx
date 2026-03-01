@@ -4,12 +4,13 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard, Search } from 'lucide-react';
+import { LayoutDashboard, Package, Store, Settings, LayoutGrid, LogOut, Menu, X, MessageSquare, Bell, Building2, CreditCard, Search, Coins } from 'lucide-react';
 import { AdminEntityProvider, useAdminEntity } from './context/AdminEntityContext';
 import { useUnreadMessagesCount } from '@/lib/hooks/useUnreadMessagesCount';
 import { MessengerPanelProvider } from './context/MessengerPanelContext';
 import { MessengerPanel } from './components/MessengerPanel';
 import { EntitySelector } from './components/EntitySelector';
+import { CreditBadge } from './components/CreditBadge';
 
 function AdminSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -47,6 +48,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin/brand-config', label: 'Ma marque', icon: Building2 },
     { href: '/admin/products', label: 'Mon Catalogue', icon: Package },
     { href: '/admin/discover', label: 'Vendre mes produits', icon: Store },
+    { href: '/admin/credits', label: 'Crédits', icon: Coins },
     { href: '/admin/placements', label: 'Mes partenariats', icon: LayoutGrid },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
     { href: '/admin/payments', label: 'Mes paiements', icon: CreditCard },
@@ -98,6 +100,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
             <div className="mt-3">
               <EntitySelector />
             </div>
+            <CreditBadge />
             <button type="button" className="lg:hidden absolute top-4 right-4 p-2" onClick={() => setOpen(false)} aria-label="Fermer">
               <X className="h-5 w-5" />
             </button>

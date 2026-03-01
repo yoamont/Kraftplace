@@ -106,15 +106,10 @@ export type ShowroomFichePreviewProps = {
   candidatureOpenFrom?: string;
   candidatureOpenTo?: string;
   commissionOptions: OptionForm[];
-  /** Informations juridiques / contact (optionnel) */
-  companyName?: string;
-  representativeName?: string;
-  email?: string;
-  phone?: string;
 };
 
-/** Aperçu de la fiche boutique telle que vue par les marques dans "Vendre mes produits". */
-export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, isPermanent = true, startDate = '', endDate = '', candidatureOpenFrom, candidatureOpenTo, commissionOptions, companyName, representativeName, email, phone }: ShowroomFichePreviewProps) {
+/** Aperçu de la fiche boutique telle que vue par les marques dans "Vendre mes produits". Les infos juridiques / contact (raison sociale, représentant, email, tél) sont confidentielles et ne sont pas affichées aux marques. */
+export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, isPermanent = true, startDate = '', endDate = '', candidatureOpenFrom, candidatureOpenTo, commissionOptions }: ShowroomFichePreviewProps) {
   const candidatureStatus = getCandidatureWindowStatus(candidatureOpenFrom, candidatureOpenTo);
   const optionsWithContent = commissionOptions.filter(
     (o) => o.rent.trim() || o.commissionPercent.trim() || o.description.trim()
@@ -146,6 +141,11 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
             <p className="text-xs text-neutral-500 mt-0.5">
               {isPermanent ? 'Lieu permanent' : ephemeralLabel ? `Éphémère · ${ephemeralLabel}` : 'Éphémère'}
             </p>
+            {(startDate?.trim() || endDate?.trim()) && (
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Partenariat : {formatDateRange(startDate ?? '', endDate ?? '')}
+              </p>
+            )}
           </div>
         </div>
         {description.trim() ? (
@@ -187,14 +187,6 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
                 ? 'Plus qu’un jour avant la fin des candidatures'
                 : `Plus que ${daysLeft} jours avant la fin des candidatures`}
           </p>
-        )}
-        {(companyName?.trim() || representativeName?.trim() || email?.trim() || phone?.trim()) && (
-          <div className="mt-3 pt-3 border-t border-neutral-100 space-y-1">
-            {companyName?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Raison sociale :</span> {companyName.trim()}</p>}
-            {representativeName?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Représentant :</span> {representativeName.trim()}</p>}
-            {email?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Contact :</span> {email.trim()}</p>}
-            {phone?.trim() && <p className="text-xs text-neutral-600"><span className="text-neutral-400">Tél :</span> {phone.trim()}</p>}
-          </div>
         )}
         <div
           className={`mt-4 w-full py-2.5 rounded-lg text-sm font-medium text-center ${

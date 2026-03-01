@@ -97,12 +97,22 @@ export function CandidatureDetailModal({
   const c = refreshedCandidature ?? candidature;
   const status = c.status ?? 'pending';
 
+  async function releaseReservedCredit(brandId: number) {
+    const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
+    const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+    await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+  }
+
   const handleAccept = async () => {
     if (viewerSide !== 'showroom' || status !== 'pending') return;
     setActionLoading(true);
     try {
       const { error } = await supabase.from('candidatures').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
+        const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', c.brand_id).single();
+        const cr = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
+        const res = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+        await supabase.from('brands').update({ credits: Math.max(0, cr - 1), reserved_credits: Math.max(0, res - 1) }).eq('id', c.brand_id);
         await fetchCandidature();
         onCandidatureUpdated?.({ ...c, status: 'accepted' });
         setMessageListKey((k) => k + 1);
@@ -117,10 +127,11 @@ export function CandidatureDetailModal({
     if (!confirm('Refuser cette offre ?')) return;
     setActionLoading(true);
     try {
-      const { error } = await supabase.from('candidatures').update({ status: 'declined', updated_at: new Date().toISOString() }).eq('id', c.id);
+      const { error } = await supabase.from('candidatures').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
+        await releaseReservedCredit(c.brand_id);
         await fetchCandidature();
-        onCandidatureUpdated?.({ ...c, status: 'declined' });
+        onCandidatureUpdated?.({ ...c, status: 'rejected' });
         setMessageListKey((k) => k + 1);
       }
     } finally {
@@ -135,6 +146,7 @@ export function CandidatureDetailModal({
     try {
       const { error } = await supabase.from('candidatures').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
+        await releaseReservedCredit(c.brand_id);
         await fetchCandidature();
         onCandidatureUpdated?.({ ...c, status: 'cancelled' });
         setMessageListKey((k) => k + 1);
@@ -250,9 +262,9 @@ export function CandidatureDetailModal({
                         <Handshake className="h-4 w-4 text-emerald-600" /> Partenariat actif
                       </p>
                     )}
-                    {(status === 'declined' || status === 'cancelled' || status === 'expired') && (
+                    {(status === 'rejected' || status === 'cancelled') && (
                       <p className="text-sm text-neutral-500 py-1">
-                        {status === 'declined' ? 'Offre refusée' : status === 'cancelled' ? 'Demande annulée' : 'Offre expirée'}
+                        {status === 'rejected' ? 'Offre refusée' : 'Demande annulée'}
                       </p>
                     )}
                   </>
@@ -284,11 +296,11 @@ export function CandidatureDetailModal({
                         <Handshake className="h-4 w-4 text-emerald-600" /> Partenariat actif
                       </p>
                     )}
-                    {status === 'declined' && (
+                    {status === 'rejected' && (
                       <p className="text-sm text-neutral-500 py-1">Offre refusée</p>
                     )}
-                    {(status === 'cancelled' || status === 'expired') && (
-                      <p className="text-sm text-neutral-500 py-1">{status === 'cancelled' ? 'Demande annulée' : 'Offre expirée'}</p>
+                    {status === 'cancelled' && (
+                      <p className="text-sm text-neutral-500 py-1">Demande annulée</p>
                     )}
                   </>
                 )}

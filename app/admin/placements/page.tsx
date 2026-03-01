@@ -17,9 +17,8 @@ type CandidatureWithDetails = Candidature & { showroom?: Showroom; option?: Show
 const candidatureStatusLabel: Record<string, string> = {
   pending: 'En attente',
   accepted: 'Acceptée',
-  declined: 'Refusée',
+  rejected: 'Refusée',
   cancelled: 'Annulée',
-  expired: 'Expirée',
 };
 
 function optionSummary(opt: ShowroomCommissionOption | null): string {
@@ -318,6 +317,13 @@ export default function PlacementsListPage() {
     if (!confirm('Annuler cette candidature ?')) return;
     setCancellingId(id);
     try {
+      const { data: cand } = await supabase.from('candidatures').select('brand_id').eq('id', id).single();
+      const brandId = (cand as { brand_id?: number } | null)?.brand_id;
+      if (typeof brandId === 'number') {
+        const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
+        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+        await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+      }
       const { error } = await supabase.from('candidatures').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', id);
       if (error) {
         console.error('Annuler candidature:', error);
@@ -551,8 +557,8 @@ export default function PlacementsListPage() {
                           {c.status === 'pending' && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
                             <p className="mt-1 text-xs text-amber-700">Valable jusqu'au {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {c.status === 'expired' && c.expires_at && (
-                            <p className="mt-1 text-xs text-neutral-500">Expirée le {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                          {c.status === 'cancelled' && c.expires_at && (
+                            <p className="mt-1 text-xs text-neutral-500">Annulée / expirée le {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
                           {lastMessageByCandidatureId[c.id]?.content && (
                             <p className="mt-2 text-sm text-neutral-600 truncate">

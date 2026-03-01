@@ -85,7 +85,9 @@ export default function MessagesPage() {
             conversations={conversations}
             activeId={selectedId}
             onSelect={setSelectedId}
+            onRefresh={refresh}
             loading={loading}
+            entityType={entityType}
           />
         </div>
       </div>

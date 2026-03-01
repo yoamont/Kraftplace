@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { MessageSquare, Loader2, X, Send, CreditCard } from 'lucide-react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { MessageSquare, Loader2, X, Send, CreditCard, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '@/app/admin/context/AdminEntityContext';
 import { useChat } from '@/lib/hooks/useChat';
 import { ChatInput } from './ChatInput';
 import { MessageEntry } from './MessageEntry';
+import { CreditsRechargeModal } from '@/app/admin/components/CreditsRechargeModal';
 import type { ShowroomCommissionOption } from '@/lib/supabase';
 
 const PLATFORM_FEE_PERCENT = 2;
@@ -43,7 +44,7 @@ export function ChatView({
   brandId,
   showroomId,
 }: Props) {
-  const { activeBrand, activeShowroom } = useAdminEntity();
+  const { activeBrand, activeShowroom, refresh: refreshEntity } = useAdminEntity();
   const senderRole: 'brand' | 'boutique' | undefined = entityType === 'brand' ? 'brand' : entityType === 'showroom' ? 'boutique' : undefined;
   const { messages, loading, sending, sendMessage, sendEvent, updateMessageMetadata, error, refresh } = useChat(conversationId, currentUserId, senderRole);
   const brandDisplayName = entityType === 'brand' ? myLabel : otherUserName;
@@ -63,8 +64,6 @@ export function ChatView({
   const [candIsNegotiation, setCandIsNegotiation] = useState(false);
   const [candNegotiationMessage, setCandNegotiationMessage] = useState('');
   const [candMotivationMessage, setCandMotivationMessage] = useState('');
-  const [candPartnershipStart, setCandPartnershipStart] = useState('');
-  const [candPartnershipEnd, setCandPartnershipEnd] = useState('');
   const [candSubmitting, setCandSubmitting] = useState(false);
 
   // Modal demande de paiement
@@ -89,6 +88,9 @@ export function ChatView({
   const [paymentNegotiateMessage, setPaymentNegotiateMessage] = useState('');
   const [paymentNegotiateSubmitting, setPaymentNegotiateSubmitting] = useState(false);
 
+  const [cancelCandidatureSubmitting, setCancelCandidatureSubmitting] = useState(false);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -111,31 +113,19 @@ export function ChatView({
       setCandIsNegotiation(false);
       setCandNegotiationMessage('');
       setCandMotivationMessage('');
-      setCandPartnershipStart('');
-      setCandPartnershipEnd('');
     })();
   }, [showCandidatureModal, showroomId]);
 
   const canSubmitCandidature =
-    ((candSelectedOptionId != null && !candIsNegotiation) || (candIsNegotiation && candNegotiationMessage.trim().length > 0)) &&
-    candPartnershipStart.trim().length > 0 &&
-    candPartnershipEnd.trim().length > 0;
+    (candSelectedOptionId != null && !candIsNegotiation) || (candIsNegotiation && candNegotiationMessage.trim().length > 0);
 
   const handleSubmitCandidatureFromChat = async () => {
     if (!conversationId || !currentUserId || !activeBrand || entityType !== 'brand') return;
     if (!canSubmitCandidature) return;
     setCandSubmitting(true);
     try {
-      const startAt = new Date(candPartnershipStart);
-      startAt.setHours(0, 0, 0, 0);
-      const endAt = new Date(candPartnershipEnd);
-      endAt.setHours(23, 59, 59, 999);
-      const expiresAt = endAt.toISOString();
       const metadata: Record<string, unknown> = {
         status: 'pending',
-        partnership_start_at: startAt.toISOString(),
-        partnership_end_at: endAt.toISOString(),
-        expires_at: expiresAt,
       };
       if (candSelectedOptionId != null && !candIsNegotiation && candOptions.length) {
         const opt = candOptions.find((o) => o.id === candSelectedOptionId);
@@ -157,6 +147,9 @@ export function ChatView({
         metadata,
         is_read: false,
       });
+      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+      await supabase.from('brands').update({ reserved_credits: reserved + 1 }).eq('id', activeBrand.id);
+      refreshEntity();
       if (candMotivationMessage.trim()) {
         await supabase.from('messages').insert({
           conversation_id: conversationId,
@@ -172,6 +165,19 @@ export function ChatView({
     } finally {
       setCandSubmitting(false);
     }
+  };
+
+  const handleOpenCandidatureModal = () => {
+    if (!activeBrand || entityType !== 'brand') return;
+    const credits = typeof activeBrand.credits === 'number' ? activeBrand.credits : 0;
+    const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+    const available = credits - reserved;
+    if (available < 1) {
+      setShowRechargeModal(true);
+      return;
+    }
+    const confirmed = typeof window !== 'undefined' && window.confirm(`Cette action réservera 1 crédit. Il vous en reste ${available} disponible(s). Continuer ?`);
+    if (confirmed) setShowCandidatureModal(true);
   };
 
   const handleSubmitPaymentFromChat = async () => {
@@ -249,7 +255,7 @@ export function ChatView({
   };
 
   const handleDeclineDeal = async (messageId: string) => {
-    await updateMessageMetadata(messageId, { status: 'declined', declined_at: new Date().toISOString() });
+    await updateMessageMetadata(messageId, { status: 'rejected', declined_at: new Date().toISOString() });
   };
 
   const handleSignContract = async (messageId: string) => {
@@ -257,15 +263,48 @@ export function ChatView({
   };
 
   const handleAcceptCandidature = async (messageId: string) => {
+    if (!conversationId) return;
+    const { data: conv } = await supabase.from('conversations').select('brand_id').eq('id', conversationId).single();
+    const bid = (conv as { brand_id?: number } | null)?.brand_id;
+    if (typeof bid === 'number') {
+      const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', bid).single();
+      const c = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
+      const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+      await supabase.from('brands').update({ credits: Math.max(0, c - 1), reserved_credits: Math.max(0, r - 1) }).eq('id', bid);
+    }
     await updateMessageMetadata(messageId, { status: 'accepted', accepted_at: new Date().toISOString() });
     await sendEvent('CANDIDATURE_ACCEPTED', { reference_message_id: messageId });
     refresh();
   };
 
   const handleDeclineCandidature = async (messageId: string) => {
-    await updateMessageMetadata(messageId, { status: 'declined', declined_at: new Date().toISOString() });
+    if (conversationId) {
+      const { data: conv } = await supabase.from('conversations').select('brand_id').eq('id', conversationId).single();
+      const bid = (conv as { brand_id?: number } | null)?.brand_id;
+      if (typeof bid === 'number') {
+        const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', bid).single();
+        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+        await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', bid);
+      }
+    }
+    await updateMessageMetadata(messageId, { status: 'rejected', declined_at: new Date().toISOString() });
     await sendEvent('CANDIDATURE_REFUSED', { reference_message_id: messageId });
     refresh();
+  };
+
+  const handleCancelMyCandidature = async () => {
+    if (!pendingCandidatureMessageId || !activeBrand) return;
+    if (!window.confirm('Annuler votre candidature ? Votre crédit réservé sera libéré.')) return;
+    setCancelCandidatureSubmitting(true);
+    try {
+      await updateMessageMetadata(pendingCandidatureMessageId, { status: 'cancelled', cancelled_at: new Date().toISOString() });
+      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+      await supabase.from('brands').update({ reserved_credits: Math.max(0, reserved - 1) }).eq('id', activeBrand.id);
+      await refresh();
+      refreshEntity();
+    } finally {
+      setCancelCandidatureSubmitting(false);
+    }
   };
 
   const handleOpenNegotiate = (messageId: string) => {
@@ -350,6 +389,32 @@ export function ChatView({
     }
   };
 
+  const { hasPendingCandidature, pendingCandidatureMessageId } = useMemo(() => {
+    if (!messages.length) return { hasPendingCandidature: false, pendingCandidatureMessageId: null as string | null };
+    const sentIdx = messages.findIndex((m) => m.type === 'CANDIDATURE_SENT');
+    if (sentIdx === -1) return { hasPendingCandidature: false, pendingCandidatureMessageId: null };
+    const acceptedAfter = messages.slice(sentIdx + 1).some((m) => m.type === 'CANDIDATURE_ACCEPTED');
+    if (acceptedAfter) return { hasPendingCandidature: false, pendingCandidatureMessageId: null };
+    const msg = messages[sentIdx];
+    const meta = msg.metadata as { status?: string } | undefined;
+    const pending = meta?.status === 'pending' || meta?.status == null;
+    return { hasPendingCandidature: pending, pendingCandidatureMessageId: pending && entityType === 'brand' ? msg.id : null };
+  }, [entityType, messages]);
+
+  const chatLocked = loading || hasPendingCandidature;
+  const prevPendingRef = useRef(hasPendingCandidature);
+  const [showUnlockBanner, setShowUnlockBanner] = useState(false);
+
+  useEffect(() => {
+    const wasPending = prevPendingRef.current;
+    prevPendingRef.current = hasPendingCandidature;
+    if (entityType === 'brand' && wasPending && !hasPendingCandidature && !loading && messages.some((m) => m.type === 'CANDIDATURE_ACCEPTED')) {
+      setShowUnlockBanner(true);
+      const t = setTimeout(() => setShowUnlockBanner(false), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [hasPendingCandidature, loading, entityType, messages]);
+
   if (!conversationId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-neutral-50/50 text-neutral-500 p-8">
@@ -427,16 +492,16 @@ export function ChatView({
 
       <div className="shrink-0 border-t bg-neutral-50">
         <div className="flex flex-wrap items-center gap-2 px-4 pt-2 pb-1">
-          {entityType === 'brand' && showroomId != null && (
+          {entityType === 'brand' && showroomId != null && !chatLocked && (
             <button
               type="button"
-              onClick={() => setShowCandidatureModal(true)}
+              onClick={handleOpenCandidatureModal}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-50"
             >
               <Send className="h-4 w-4" /> Envoyer une candidature
             </button>
           )}
-          {brandId != null && showroomId != null && (
+          {brandId != null && showroomId != null && !chatLocked && (
             <button
               type="button"
               onClick={() => { setShowPaymentModal(true); setPaymentRequestAsPayer(null); setPaymentError(null); setPaymentAmount(''); setPaymentMotif(''); setPaymentFile(null); }}
@@ -447,11 +512,57 @@ export function ChatView({
           )}
         </div>
         <div className="p-4 pt-0 w-full">
-          <ChatInput
-            onSend={sendMessage}
-            disabled={sending || !currentUserId}
-            placeholder="Écrire un message…"
-          />
+          {showUnlockBanner && entityType === 'brand' && (
+            <div className="mb-3 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900 shadow-sm">
+              <p className="font-semibold flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                Chat débloqué !
+              </p>
+              <p className="mt-1 text-green-800">
+                Vous pouvez échanger avec la boutique. Votre crédit a bien été débité.
+              </p>
+            </div>
+          )}
+          {chatLocked ? (
+            loading ? (
+              <div className="rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-3 text-sm text-neutral-500">
+                Chargement de la conversation…
+              </div>
+            ) : entityType === 'brand' ? (
+              <>
+                <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900 mb-3">
+                  <p className="font-medium">Candidature envoyée.</p>
+                  <p className="mt-1 text-blue-800">
+                    Le chat s&apos;ouvrira dès que la boutique aura validé votre profil. Aucun crédit n&apos;est débité pour le moment.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelMyCandidature}
+                    disabled={cancelCandidatureSubmitting}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 bg-neutral-100 text-neutral-600 text-sm font-medium hover:bg-neutral-200 disabled:opacity-60"
+                  >
+                    {cancelCandidatureSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Annuler ma candidature
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+                <p className="font-medium">Une candidature est en attente de votre réponse.</p>
+                <p className="mt-1 text-amber-800">
+                  Acceptez ou refusez la candidature dans le fil de discussion ci-dessus pour débloquer le chat et échanger avec la marque.
+                </p>
+              </div>
+            )
+          ) : (
+            <ChatInput
+              onSend={sendMessage}
+              disabled={sending || !currentUserId}
+              placeholder="Écrire un message…"
+            />
+          )}
         </div>
       </div>
 
@@ -525,6 +636,10 @@ export function ChatView({
         </>
       )}
 
+      {showRechargeModal && (
+        <CreditsRechargeModal onClose={() => setShowRechargeModal(false)} title="Recharger mes crédits" />
+      )}
+
       {/* Modal : Envoyer une candidature depuis la messagerie */}
       {showCandidatureModal && (
         <>
@@ -580,32 +695,6 @@ export function ChatView({
                       className="w-full ml-6 px-3 py-2 rounded-lg border border-neutral-200 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none"
                     />
                   )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-900 mb-2">Période du partenariat</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block">
-                      <span className="text-xs text-neutral-600 block mb-1">Date de début</span>
-                      <input
-                        type="date"
-                        value={candPartnershipStart}
-                        onChange={(e) => setCandPartnershipStart(e.target.value)}
-                        min={new Date().toISOString().slice(0, 10)}
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-xs text-neutral-600 block mb-1">Date de fin</span>
-                      <input
-                        type="date"
-                        value={candPartnershipEnd}
-                        onChange={(e) => setCandPartnershipEnd(e.target.value)}
-                        min={candPartnershipStart || new Date().toISOString().slice(0, 10)}
-                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-0.5">L’offre pourra être acceptée jusqu’à la date de fin.</p>
                 </div>
                 <div>
                   <label htmlFor="chat-motivation" className="block text-sm font-medium text-neutral-900 mb-1">Message (optionnel)</label>

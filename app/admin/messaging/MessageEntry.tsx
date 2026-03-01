@@ -82,7 +82,9 @@ export function MessageEntry({
     showActions: boolean,
     onAccept?: () => void,
     onDecline?: () => void,
-    onNegotiate?: () => void
+    onNegotiate?: () => void,
+    acceptLabel = 'Accepter',
+    declineLabel = 'Refuser'
   ) => (
     <div className="flex w-full justify-center my-2">
       <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 p-4 shadow-sm">
@@ -101,12 +103,12 @@ export function MessageEntry({
           <div className="mt-3 flex flex-wrap gap-2">
             {onAccept && (
               <button type="button" onClick={onAccept} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">
-                <CheckCircle className="h-4 w-4" /> Accepter
+                <CheckCircle className="h-4 w-4" /> {acceptLabel}
               </button>
             )}
             {onDecline && (
               <button type="button" onClick={onDecline} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50">
-                <XCircle className="h-4 w-4" /> Refuser
+                <XCircle className="h-4 w-4" /> {declineLabel}
               </button>
             )}
             {onNegotiate && (
@@ -117,7 +119,7 @@ export function MessageEntry({
           </div>
         )}
         {status === 'accepted' && <p className="mt-2 text-sm text-green-600 font-medium">Offre acceptée</p>}
-        {status === 'declined' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
+        {status === 'rejected' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
         <span className="text-[10px] text-neutral-400 mt-2 block">{timeStr}</span>
       </div>
     </div>
@@ -185,7 +187,7 @@ export function MessageEntry({
               </div>
             )}
             {status === 'accepted' && <p className="mt-2 text-sm text-green-600 font-medium">Offre acceptée</p>}
-            {status === 'declined' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
+            {status === 'rejected' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
             <span className="text-[10px] text-neutral-400 mt-2 block">{timeStr}</span>
           </div>
         </div>
@@ -199,7 +201,9 @@ export function MessageEntry({
         canRespond,
         onAcceptCandidature ? () => onAcceptCandidature(message.id) : undefined,
         onDeclineCandidature ? () => onDeclineCandidature(message.id) : undefined,
-        onNegotiateCandidature ? () => onNegotiateCandidature(message.id) : undefined
+        onNegotiateCandidature ? () => onNegotiateCandidature(message.id) : undefined,
+        'Accepter (Ouvrir le chat)',
+        'Décliner'
       );
     }
 

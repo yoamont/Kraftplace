@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     e.preventDefault();
     setError(null);
     setLoading(true);

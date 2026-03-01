@@ -214,6 +214,14 @@ export default function CurationPage() {
   async function acceptCandidature(id: string) {
     setSubmitting(true);
     try {
+      const { data: cand } = await supabase.from('candidatures').select('brand_id').eq('id', id).single();
+      const brandId = (cand as { brand_id?: number } | null)?.brand_id;
+      if (typeof brandId === 'number') {
+        const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', brandId).single();
+        const c = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
+        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+        await supabase.from('brands').update({ credits: Math.max(0, c - 1), reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+      }
       await supabase.from('candidatures').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', id);
       await loadCandidatures();
     } finally {
@@ -225,7 +233,14 @@ export default function CurationPage() {
     if (!confirm('Refuser cette candidature ?')) return;
     setSubmitting(true);
     try {
-      await supabase.from('candidatures').update({ status: 'declined', updated_at: new Date().toISOString() }).eq('id', id);
+      const { data: cand } = await supabase.from('candidatures').select('brand_id').eq('id', id).single();
+      const brandId = (cand as { brand_id?: number } | null)?.brand_id;
+      if (typeof brandId === 'number') {
+        const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
+        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
+        await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+      }
+      await supabase.from('candidatures').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', id);
       await loadCandidatures();
     } finally {
       setSubmitting(false);
@@ -653,7 +668,7 @@ export default function CurationPage() {
                           {c.status === 'pending' && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
                             <p className="mt-1 text-xs text-amber-700">Valable jusqu'au {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {c.status === 'expired' && c.expires_at && (
+                          {c.status === 'cancelled' && c.expires_at && (
                             <p className="mt-1 text-xs text-neutral-500">Expirée le {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
                           {lastMessageByCandidatureId[c.id] && (
@@ -667,10 +682,10 @@ export default function CurationPage() {
                           <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-medium ${
                             c.status === 'pending' ? 'bg-amber-100 text-amber-800' :
                             c.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                            c.status === 'declined' || c.status === 'expired' ? 'bg-neutral-100 text-neutral-600' :
+                            c.status === 'rejected' || c.status === 'cancelled' ? 'bg-neutral-100 text-neutral-600' :
                             'bg-neutral-100 text-neutral-700'
                           }`}>
-                            {c.status === 'pending' ? 'En attente' : c.status === 'accepted' ? 'Acceptée' : c.status === 'declined' ? 'Refusée' : c.status === 'expired' ? 'Expirée' : c.status}
+                            {c.status === 'pending' ? 'En attente' : c.status === 'accepted' ? 'Acceptée' : c.status === 'rejected' ? 'Refusée' : c.status === 'cancelled' ? 'Annulée' : c.status}
                           </span>
                           <button
                             type="button"

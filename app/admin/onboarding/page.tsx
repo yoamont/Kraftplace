@@ -59,6 +59,7 @@ export default function OnboardingPage() {
         description: brandDescription.trim() || null,
         image_url: brandImageUrl.trim() || null,
         default_commission_rate: commission,
+        credits: 2,
       });
       if (err) {
         if (err.code === '23505') setError('Une marque avec ce nom existe déjà.');

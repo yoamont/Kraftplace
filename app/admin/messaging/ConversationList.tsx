@@ -1,14 +1,34 @@
 'use client';
 
-import { MessageSquare } from 'lucide-react';
-import type { ConversationWithDetails } from '@/lib/hooks/useConversations';
+import { useState } from 'react';
+import { MessageSquare, Loader2, XCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAdminEntity } from '@/app/admin/context/AdminEntityContext';
+import type { ConversationWithDetails, CandidatureStatus } from '@/lib/hooks/useConversations';
 
 type Props = {
   conversations: ConversationWithDetails[];
   activeId: string | null;
   onSelect: (id: string) => void;
+  onRefresh: () => void;
   loading: boolean;
+  entityType: 'brand' | 'showroom' | null;
 };
+
+function StatusChip({ status }: { status: CandidatureStatus }) {
+  if (!status) return null;
+  const config = {
+    pending: { label: 'En attente', className: 'bg-amber-100 text-amber-800 border-amber-200' },
+    accepted: { label: 'Validée - Chat ouvert', className: 'bg-green-100 text-green-800 border-green-200' },
+    rejected: { label: 'Refusée - Crédit libéré', className: 'bg-neutral-100 text-neutral-600 border-neutral-200' },
+  };
+  const c = config[status];
+  return (
+    <span className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded border ${c.className}`}>
+      {c.label}
+    </span>
+  );
+}
 
 function SkeletonItem() {
   return (
@@ -26,8 +46,31 @@ export function ConversationList({
   conversations,
   activeId,
   onSelect,
+  onRefresh,
   loading,
+  entityType,
 }: Props) {
+  const { activeBrand, refresh: refreshEntity } = useAdminEntity();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function handleCancelCandidature(conv: ConversationWithDetails, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!conv.pendingCandidatureMessageId || !activeBrand || entityType !== 'brand') return;
+    if (!window.confirm('Annuler votre candidature ? Votre crédit réservé sera libéré.')) return;
+    setCancellingId(conv.id);
+    try {
+      const { data: existing } = await supabase.from('messages').select('metadata').eq('id', conv.pendingCandidatureMessageId).single();
+      const current = ((existing as { metadata?: Record<string, unknown> })?.metadata ?? {}) as Record<string, unknown>;
+      await supabase.from('messages').update({ metadata: { ...current, status: 'cancelled', cancelled_at: new Date().toISOString() }, updated_at: new Date().toISOString() }).eq('id', conv.pendingCandidatureMessageId);
+      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
+      await supabase.from('brands').update({ reserved_credits: Math.max(0, reserved - 1) }).eq('id', activeBrand.id);
+      refreshEntity();
+      onRefresh();
+    } finally {
+      setCancellingId(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="divide-y divide-neutral-100">
@@ -53,10 +96,12 @@ export function ConversationList({
         const isActive = conv.id === activeId;
         return (
           <li key={conv.id}>
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(conv.id)}
-              className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv.id); } }}
+              className={`w-full flex items-center gap-3 p-3 text-left transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-kraft-200 text-kraft-900'
                   : 'hover:bg-neutral-50 text-neutral-900'
@@ -84,9 +129,25 @@ export function ConversationList({
                 <p className="font-semibold text-sm truncate">
                   {conv.otherParty.name}
                 </p>
-                <p className="text-xs text-neutral-500 truncate mt-0.5">
-                  {conv.lastMessage?.content ?? 'Aucun message'}
-                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  {conv.candidatureStatus != null && (
+                    <StatusChip status={conv.candidatureStatus} />
+                  )}
+                  <p className="text-xs text-neutral-500 truncate">
+                    {conv.lastMessage?.content ?? 'Aucun message'}
+                  </p>
+                </div>
+                {entityType === 'brand' && conv.candidatureStatus === 'pending' && conv.pendingCandidatureMessageId && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleCancelCandidature(conv, e)}
+                    disabled={cancellingId === conv.id}
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-neutral-600 hover:text-red-600 disabled:opacity-60"
+                  >
+                    {cancellingId === conv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                    Annuler la candidature
+                  </button>
+                )}
               </div>
               {conv.lastMessage?.created_at && (
                 <span className="text-[10px] text-neutral-400 shrink-0">
@@ -96,7 +157,7 @@ export function ConversationList({
                   )}
                 </span>
               )}
-            </button>
+            </div>
           </li>
         );
       })}
