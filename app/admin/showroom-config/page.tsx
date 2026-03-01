@@ -467,7 +467,7 @@ export default function ShowroomConfigPage() {
       <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6">
         <ArrowLeft className="h-4 w-4" /> Dashboard
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900">Ma boutique</h1>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Boutique</h1>
       <p className="mt-1 text-sm text-neutral-500">Modifiez les informations affichées aux marques.</p>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">

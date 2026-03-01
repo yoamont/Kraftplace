@@ -57,23 +57,23 @@ function formatPostulerÀPartirDate(openFrom: string | null): string {
   }
 }
 
-/** Format court période exposition : "Avril - Juin" ou "Déc. 2025 - Fév. 2026". */
+/** Format court période exposition : "Avr - Juin" (une ligne, labels fins). */
 function formatExpoShort(start: string | null, end: string | null): string {
   if (!start?.trim() && !end?.trim()) return '';
   try {
     const s = start?.trim() ? new Date(start) : null;
     const e = end?.trim() ? new Date(end) : null;
     if (!s && !e) return '';
-    const monthLong = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long' });
+    const monthShort = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'short' });
     const cap = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
     if (s && e) {
       const yS = s.getFullYear();
       const yE = e.getFullYear();
-      if (yS === yE) return `${cap(monthLong(s))} - ${cap(monthLong(e))}`;
-      return `${cap(s.toLocaleDateString('fr-FR', { month: 'short' }))} ${yS} - ${cap(e.toLocaleDateString('fr-FR', { month: 'short' }))} ${yE}`;
+      if (yS === yE) return `${cap(monthShort(s))} - ${cap(monthShort(e))}`;
+      return `${cap(monthShort(s))} ${yS} - ${cap(monthShort(e))} ${yE}`;
     }
-    if (s) return `À partir de ${cap(monthLong(s))}`;
-    return e ? `Jusqu'à ${cap(monthLong(e))}` : '';
+    if (s) return `À partir de ${cap(monthShort(s))}`;
+    return e ? `Jusqu'à ${cap(monthShort(e))}` : '';
   } catch {
     return '';
   }
@@ -133,8 +133,8 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
   const showUrgencyDot = urgencyDays != null && urgencyDays <= 7 && candidatureStatus === 'open';
 
   return (
-    <article className="rounded-2xl border border-neutral-100 bg-white overflow-hidden shadow-sm">
-      <div className="aspect-[4/3] bg-neutral-50 flex items-center justify-center relative">
+    <article className="rounded-[12px] bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+      <div className="aspect-[4/3] bg-neutral-50/80 flex items-center justify-center relative">
         {s.image_url?.trim() ? (
           <img src={s.image_url.trim()} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -167,9 +167,9 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
           ) : null;
         })()}
       </div>
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="w-11 h-11 rounded-full bg-neutral-100 shrink-0 overflow-hidden border border-neutral-100 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             {s.avatar_url?.trim() ? (
               <img src={s.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -212,61 +212,39 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
           </p>
         )}
         {((openFrom || openTo) || (partnershipStart || partnershipEnd)) && (
-          <div className="mt-3 flex items-stretch text-left">
+          <p className="mt-3 text-[13px] font-light text-neutral-600 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
             {(openFrom || openTo) && (
-              <div className="flex flex-1 items-start gap-2 min-w-0 pr-3 justify-start">
-                <span className="shrink-0 text-base leading-none" aria-hidden>✍️</span>
-                <div className="min-w-0">
-                  <p className="leading-tight">
-                    <span className="text-[11px] font-medium text-neutral-500">{openTo ? 'Postuler avant le ' : 'Postuler à partir du '}</span>
-                    <span className="text-sm font-bold text-neutral-900">{openTo ? formatPostulerAvantDate(openTo) : formatPostulerÀPartirDate(openFrom)}</span>
-                  </p>
-                  {candidatureStatus === 'open' && urgencyDays != null && urgencyDays <= 7 && urgencyDays >= 0 && (
-                    <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">Bientôt fini</span>
-                  )}
-                </div>
-              </div>
+              <>
+                <span aria-hidden>✍️</span>
+                <span className="font-normal text-neutral-500">{openTo ? 'Av. le ' : 'À partir du '}</span>
+                <span className="font-semibold text-neutral-900">{openTo ? formatPostulerAvantDate(openTo) : formatPostulerÀPartirDate(openFrom)}</span>
+                {candidatureStatus === 'open' && urgencyDays != null && urgencyDays <= 7 && urgencyDays >= 0 && (
+                  <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">Bientôt fini</span>
+                )}
+              </>
             )}
-            {(openFrom || openTo) && (partnershipStart || partnershipEnd) && (
-              <div className="w-px shrink-0 bg-neutral-200/80 self-stretch" aria-hidden />
-            )}
+            {(openFrom || openTo) && (partnershipStart || partnershipEnd) && <span className="text-neutral-300">|</span>}
             {(partnershipStart || partnershipEnd) && (
-              <div className={`flex flex-1 items-start gap-2 min-w-0 justify-start ${(openFrom || openTo) ? 'pl-3' : ''}`}>
-                <span className="shrink-0 text-base leading-none" aria-hidden>📍</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-neutral-900 leading-tight">{formatExpoShort(partnershipStart, partnershipEnd)}</p>
-                  {partnershipStart && partnershipEnd && durationShort(partnershipStart, partnershipEnd) && (
-                    <p className="text-[11px] text-neutral-500 mt-0.5">{durationShort(partnershipStart, partnershipEnd)}</p>
-                  )}
-                </div>
-              </div>
+              <>
+                <span aria-hidden>🏠</span>
+                <span className="font-semibold text-neutral-900">{formatExpoShort(partnershipStart, partnershipEnd)}</span>
+              </>
             )}
-          </div>
+          </p>
         )}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {commissionOptions.length > 0
-            ? commissionOptions.slice(0, 3).map((o) => (
-                <span
-                  key={o.id}
-                  className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-900 shadow-sm"
-                >
-                  {o.rent != null && o.rent > 0 && (
-                    <span>{o.rent}€{rentPeriodLabel(o.rent_period)}</span>
-                  )}
-                  {o.commission_percent != null && <span>{o.commission_percent} %</span>}
-                  {o.description?.trim() && (
-                    <span
-                      className="text-neutral-400 hover:text-neutral-600 cursor-help"
-                      title={o.description}
-                      aria-label="Voir les conditions"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </span>
-                  )}
-                </span>
-              ))
-            : null}
-        </div>
+        {commissionOptions.length > 0 && (
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-light text-neutral-600">
+            {commissionOptions.slice(0, 3).map((o) => (
+              <span key={o.id} className="inline-flex items-center gap-1">
+                {o.rent != null && o.rent > 0 && <span className="font-medium text-neutral-800">{o.rent}€{rentPeriodLabel(o.rent_period)}</span>}
+                {o.commission_percent != null && <span className="font-medium text-neutral-800">{o.commission_percent}%</span>}
+                {o.description?.trim() && (
+                  <Info className="h-3 w-3 text-neutral-400 cursor-help shrink-0" title={o.description} aria-label="Détails" strokeWidth={1.5} />
+                )}
+              </span>
+            ))}
+          </p>
+        )}
         {false && (
           <p className="mt-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg px-2.5 py-1.5 hidden">
             {0 === 0
@@ -276,7 +254,7 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
                 : 'Plus que X jours'}
           </p>
         )}
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-5 flex flex-col gap-2">
           {children}
         </div>
       </div>

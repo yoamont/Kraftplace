@@ -1,7 +1,7 @@
 'use client';
 
 import type { UnifiedMessage } from '@/lib/supabase';
-import { FileText, ExternalLink, CheckCircle, XCircle, MessageCircle } from 'lucide-react';
+import { FileText, ExternalLink, CheckCircle, XCircle, MessageCircle, Calendar, Percent, Home, MapPin } from 'lucide-react';
 
 type Props = {
   message: UnifiedMessage;
@@ -42,6 +42,33 @@ function senderBadge(message: UnifiedMessage): string | null {
   return null;
 }
 
+/** Durée entre deux dates : "3 mois", "2 semaines", "1 mois". */
+function formatDuration(start: string | null, end: string | null): string {
+  if (!start || !end) return '';
+  try {
+    const a = new Date(start);
+    const b = new Date(end);
+    const months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    const days = Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
+    if (months >= 1) return `${months} mois`;
+    if (days >= 14) return `${Math.round(days / 7)} semaines`;
+    return `${days} jours`;
+  } catch {
+    return '';
+  }
+}
+
+/** Période formatée : "Du 1 avr. au 30 juin 2026". */
+function formatPeriod(start: string | null, end: string | null): string {
+  if (!start || !end) return '';
+  try {
+    const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `Du ${fmt(new Date(start))} au ${fmt(new Date(end))}`;
+  } catch {
+    return '';
+  }
+}
+
 export function MessageEntry({
   message,
   isMe,
@@ -64,13 +91,26 @@ export function MessageEntry({
         .format(new Date(message.created_at))
         .replace(':', 'h')
     : '';
+  const dateLabel = message.created_at
+    ? new Date(message.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
   const meta = (message.metadata ?? {}) as Record<string, unknown>;
   const status = meta.status as string | undefined;
 
   const rentPeriodLabel = (period: unknown) =>
     period === 'week' ? '/sem.' : period === 'one_off' ? ' unique' : '/mois';
 
-  const renderOfferCard = (
+  const periodStr = formatPeriod(
+    (meta.partnership_start_at as string) ?? null,
+    (meta.partnership_end_at as string) ?? null
+  );
+  const durationStr = formatDuration(
+    (meta.partnership_start_at as string) ?? null,
+    (meta.partnership_end_at as string) ?? null
+  );
+  const lieuStr = [meta.showroom_name, meta.showroom_city].filter(Boolean).join(', ') || showroomDisplayName || null;
+
+  const renderContractCard = (
     title: string,
     showActions: boolean,
     onAccept?: () => void,
@@ -78,45 +118,113 @@ export function MessageEntry({
     onNegotiate?: () => void,
     acceptLabel = 'Accepter',
     declineLabel = 'Refuser'
-  ) => (
-    <div className="flex w-full justify-center my-2">
-      <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 p-4 shadow-sm">
-        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">{title}</p>
-        <div className="space-y-1 text-sm text-neutral-700">
-          {meta.commission_percent != null && <p>Commission : {String(meta.commission_percent)} %</p>}
-          {meta.rent != null && <p>Loyer : {String(meta.rent)} €{rentPeriodLabel(meta.rent_period)}</p>}
-          {meta.partnership_start_at != null && meta.partnership_end_at != null && (
-            <p>Partenariat : du {new Date(meta.partnership_start_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au {new Date(meta.partnership_end_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-          )}
-          {meta.validity_days != null && !meta.partnership_start_at && !meta.partnership_end_at && <p>Validité : {String(meta.validity_days)} jours</p>}
-          {meta.option_description && <p className="text-neutral-600">{String(meta.option_description)}</p>}
-          {meta.negotiation_message && <p className="text-neutral-600 italic">{String(meta.negotiation_message)}</p>}
-        </div>
-        {showActions && (status === 'pending' || !status) && (onAccept || onDecline || onNegotiate) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {onAccept && (
-              <button type="button" onClick={onAccept} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700">
-                <CheckCircle className="h-4 w-4" /> {acceptLabel}
-              </button>
+  ) => {
+    const isPending = status === 'pending' || !status;
+    const isAccepted = status === 'accepted';
+    const isRejected = status === 'rejected';
+    return (
+      <div className="flex w-full justify-center my-2">
+        <div className="w-full max-w-md rounded-[12px] bg-white border border-black/[0.06] p-4">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide shrink-0">{title}</p>
+            {isPending && (
+              <span className="shrink-0 text-[11px] font-medium text-amber-700 bg-amber-50/90 px-2 py-0.5 rounded-full">
+                En attente
+              </span>
             )}
-            {onDecline && (
-              <button type="button" onClick={onDecline} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50">
-                <XCircle className="h-4 w-4" /> {declineLabel}
-              </button>
+            {isAccepted && (
+              <span className="shrink-0 text-[11px] font-medium text-emerald-700 bg-emerald-50/90 px-2 py-0.5 rounded-full">
+                Validé
+              </span>
             )}
-            {onNegotiate && (
-              <button type="button" onClick={onNegotiate} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 bg-white text-neutral-700 text-sm font-medium hover:bg-neutral-50">
-                <MessageCircle className="h-4 w-4" /> Négocier
-              </button>
+            {isRejected && (
+              <span className="shrink-0 text-[11px] font-medium text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-full">
+                Refusé
+              </span>
             )}
           </div>
-        )}
-        {status === 'accepted' && <p className="mt-2 text-sm text-green-600 font-medium">Offre acceptée</p>}
-        {status === 'rejected' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
-        <span className="text-[10px] text-neutral-400 mt-2 block">{timeStr}</span>
+          <div className="space-y-3">
+            {(periodStr || durationStr) && (
+              <div className="flex items-start gap-2.5">
+                <Calendar className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm text-neutral-500">Dates</p>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {periodStr}
+                    {durationStr ? ` (Durée : ${durationStr})` : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+            {meta.commission_percent != null && (
+              <div className="flex items-start gap-2.5">
+                <Percent className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm text-neutral-500">Commission</p>
+                  <p className="text-sm font-semibold text-neutral-900">{String(meta.commission_percent)} %</p>
+                </div>
+              </div>
+            )}
+            {(meta.rent != null || meta.rent === 0) && (
+              <div className="flex items-start gap-2.5">
+                <Home className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm text-neutral-500">Loyer</p>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {String(meta.rent)} €{rentPeriodLabel(meta.rent_period)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {!periodStr && meta.validity_days != null && (
+              <div className="flex items-start gap-2.5">
+                <Calendar className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm text-neutral-500">Validité</p>
+                  <p className="text-sm font-semibold text-neutral-900">{String(meta.validity_days)} jours</p>
+                </div>
+              </div>
+            )}
+            {lieuStr && (
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm text-neutral-500">Lieu</p>
+                  <p className="text-sm font-semibold text-neutral-900">{lieuStr}</p>
+                </div>
+              </div>
+            )}
+            {meta.option_description && (
+              <p className="text-sm text-neutral-600 pt-0.5">{String(meta.option_description)}</p>
+            )}
+            {meta.negotiation_message && (
+              <p className="text-sm text-neutral-600 italic pt-0.5">{String(meta.negotiation_message)}</p>
+            )}
+          </div>
+          {showActions && isPending && (onAccept || onDecline || onNegotiate) && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {onAccept && (
+                <button type="button" onClick={onAccept} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors">
+                  <CheckCircle className="h-4 w-4" strokeWidth={1.5} /> {acceptLabel}
+                </button>
+              )}
+              {onDecline && (
+                <button type="button" onClick={onDecline} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[0.08] text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
+                  <XCircle className="h-4 w-4" strokeWidth={1.5} /> {declineLabel}
+                </button>
+              )}
+              {onNegotiate && (
+                <button type="button" onClick={onNegotiate} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[0.08] text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
+                  <MessageCircle className="h-4 w-4" strokeWidth={1.5} /> Négocier
+                </button>
+              )}
+            </div>
+          )}
+          <span className="text-[10px] text-neutral-400 mt-3 block">{timeStr}</span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   switch (message.type) {
     case 'CHAT':
@@ -144,44 +252,87 @@ export function MessageEntry({
       );
 
     case 'DEAL_SENT': {
-      const commission = meta.commission_percent;
-      const rent = meta.rent;
-      const rentPeriod = meta.rent_period === 'month' ? '/mois' : meta.rent_period === 'week' ? '/sem.' : '';
-      const isPending = status === 'pending' || !status;
+      const dealPending = status === 'pending' || !status;
+      const dealAccepted = status === 'accepted';
+      const dealRejected = status === 'rejected';
       return (
         <div className="flex w-full justify-center my-2">
-          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 p-4 shadow-sm">
-            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Offre</p>
-            <div className="space-y-1 text-sm text-neutral-700">
-              {commission != null && <p>Commission : {String(commission)} %</p>}
-              {rent != null && <p>Loyer : {String(rent)} €{rentPeriod}</p>}
-              {meta.partnership_start_at != null && meta.partnership_end_at != null && (
-                <p>Partenariat : du {new Date(meta.partnership_start_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au {new Date(meta.partnership_end_at as string).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+          <div className="w-full max-w-md rounded-[12px] bg-white border border-black/[0.06] p-4">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide shrink-0">Offre</p>
+              {dealPending && (
+                <span className="shrink-0 text-[11px] font-medium text-amber-700 bg-amber-50/90 px-2 py-0.5 rounded-full">En attente</span>
               )}
-              {meta.validity_days != null && !meta.partnership_start_at && !meta.partnership_end_at && <p>Validité : {String(meta.validity_days)} jours</p>}
-              {meta.option_description && <p className="text-neutral-600">{String(meta.option_description)}</p>}
+              {dealAccepted && (
+                <span className="shrink-0 text-[11px] font-medium text-emerald-700 bg-emerald-50/90 px-2 py-0.5 rounded-full">Validé</span>
+              )}
+              {dealRejected && (
+                <span className="shrink-0 text-[11px] font-medium text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-full">Refusé</span>
+              )}
             </div>
-            {isPending && onAcceptDeal && onDeclineDeal && (
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => onAcceptDeal(message.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4" /> Accepter
+            <div className="space-y-3">
+              {(periodStr || durationStr) && (
+                <div className="flex items-start gap-2.5">
+                  <Calendar className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-500">Dates</p>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {periodStr}{durationStr ? ` (Durée : ${durationStr})` : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {meta.commission_percent != null && (
+                <div className="flex items-start gap-2.5">
+                  <Percent className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-500">Commission</p>
+                    <p className="text-sm font-semibold text-neutral-900">{String(meta.commission_percent)} %</p>
+                  </div>
+                </div>
+              )}
+              {(meta.rent != null || meta.rent === 0) && (
+                <div className="flex items-start gap-2.5">
+                  <Home className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-500">Loyer</p>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {String(meta.rent)} €{rentPeriodLabel(meta.rent_period)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!periodStr && meta.validity_days != null && (
+                <div className="flex items-start gap-2.5">
+                  <Calendar className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-500">Validité</p>
+                    <p className="text-sm font-semibold text-neutral-900">{String(meta.validity_days)} jours</p>
+                  </div>
+                </div>
+              )}
+              {lieuStr && (
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-500">Lieu</p>
+                    <p className="text-sm font-semibold text-neutral-900">{lieuStr}</p>
+                  </div>
+                </div>
+              )}
+              {meta.option_description && <p className="text-sm text-neutral-600 pt-0.5">{String(meta.option_description)}</p>}
+            </div>
+            {dealPending && onAcceptDeal && onDeclineDeal && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" onClick={() => onAcceptDeal(message.id)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors">
+                  <CheckCircle className="h-4 w-4" strokeWidth={1.5} /> Accepter
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onDeclineDeal(message.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50"
-                >
-                  <XCircle className="h-4 w-4" /> Refuser
+                <button type="button" onClick={() => onDeclineDeal(message.id)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/[0.08] text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors">
+                  <XCircle className="h-4 w-4" strokeWidth={1.5} /> Refuser
                 </button>
               </div>
             )}
-            {status === 'accepted' && <p className="mt-2 text-sm text-green-600 font-medium">Offre acceptée</p>}
-            {status === 'rejected' && <p className="mt-2 text-sm text-red-600 font-medium">Offre refusée</p>}
-            <span className="text-[10px] text-neutral-400 mt-2 block">{timeStr}</span>
+            <span className="text-[10px] text-neutral-400 mt-3 block">{timeStr}</span>
           </div>
         </div>
       );
@@ -189,8 +340,8 @@ export function MessageEntry({
 
     case 'CANDIDATURE_SENT': {
       const canRespond = viewerRole === 'boutique' && (status === 'pending' || !status);
-      return renderOfferCard(
-        'Candidature envoyée',
+      return renderContractCard(
+        dateLabel ? `Candidature envoyée le ${dateLabel}` : 'Candidature envoyée',
         canRespond,
         onAcceptCandidature ? () => onAcceptCandidature(message.id) : undefined,
         onDeclineCandidature ? () => onDeclineCandidature(message.id) : undefined,
@@ -202,7 +353,7 @@ export function MessageEntry({
 
     case 'OFFER_NEGOTIATED': {
       const otherPartyCanRespond = viewerRole != null && message.sender_role !== viewerRole && (status === 'pending' || !status);
-      return renderOfferCard(
+      return renderContractCard(
         'Proposition mise à jour',
         !!otherPartyCanRespond,
         onAcceptCandidature ? () => onAcceptCandidature(message.id) : undefined,
@@ -216,7 +367,7 @@ export function MessageEntry({
       const isSigned = status === 'signed';
       return (
         <div className="flex w-full justify-center my-2">
-          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 p-4 shadow-sm">
+          <div className="w-full max-w-md rounded-[12px] bg-white border border-black/[0.06] p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-neutral-800">
               <FileText className="h-4 w-4 text-neutral-500" />
               Contrat
@@ -285,18 +436,26 @@ export function MessageEntry({
     case 'DEAL_EXPIRED':
     case 'CANDIDATURE_ACCEPTED':
     case 'CANDIDATURE_REFUSED': {
-      const statusLabel =
-        message.type === 'DEAL_ACCEPTED' || message.type === 'CANDIDATURE_ACCEPTED'
-          ? 'Candidature acceptée'
-          : message.type === 'DEAL_DECLINED' || message.type === 'CANDIDATURE_REFUSED'
-            ? 'Candidature refusée'
-            : 'Offre expirée';
+      const acceptedOrDeclined = message.type === 'DEAL_ACCEPTED' || message.type === 'CANDIDATURE_ACCEPTED'
+        ? 'Candidature acceptée'
+        : message.type === 'DEAL_DECLINED' || message.type === 'CANDIDATURE_REFUSED'
+          ? 'Candidature refusée'
+          : 'Offre expirée';
+      const statusLabel = (acceptedOrDeclined === 'Candidature acceptée' || acceptedOrDeclined === 'Candidature refusée') && dateLabel
+        ? `${acceptedOrDeclined} le ${dateLabel}`
+        : acceptedOrDeclined;
       const isPositive = message.type === 'DEAL_ACCEPTED' || message.type === 'CANDIDATURE_ACCEPTED';
+      const showUnlockSubtitle = message.type === 'CANDIDATURE_ACCEPTED' && viewerRole === 'brand';
       return (
         <div className="flex w-full justify-center my-2">
-          <span className={`text-xs py-1.5 px-3 rounded-full text-center ${isPositive ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}`}>
-            {statusLabel}
-          </span>
+          <div className="flex flex-col items-center gap-1">
+            <span className={`text-xs py-1.5 px-3 rounded-full text-center ${isPositive ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}`}>
+              {statusLabel}
+            </span>
+            {showUnlockSubtitle && (
+              <span className="text-[11px] font-light text-neutral-500">Chat débloqué & Crédit débité</span>
+            )}
+          </div>
         </div>
       );
     }

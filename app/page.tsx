@@ -3,263 +3,130 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Send, MessageCircle, Store, LayoutGrid, Sparkles } from 'lucide-react';
-import { ButtonBrand } from '@/components/landing/ButtonBrand';
-import { ButtonShowroom } from '@/components/landing/ButtonShowroom';
+import type { Badge } from '@/lib/supabase';
+import { Store, Sparkles, Calendar, MessageCircle, Zap } from 'lucide-react';
+import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
+
+const BADGE_DUPLICATES = 3;
+
+const FOOTER_STEPS = [
+  { icon: Calendar, label: 'Postulez', tooltip: 'Parcourez les lieux, choisissez vos dates et envoyez votre candidature en un clic.' },
+  { icon: MessageCircle, label: 'Échangez', tooltip: 'Discutez directement avec le lieu via la messagerie intégrée et validez les conditions.' },
+  { icon: Zap, label: 'Exposez', tooltip: 'Une fois accepté, exposez vos produits et développez votre présence en boutique.' },
+] as const;
 
 export default function HomePage() {
   const [user, setUser] = useState<{ id: string } | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: u } }) => setUser(u ? { id: u.id } : null));
   }, []);
 
+  useEffect(() => {
+    supabase
+      .from('badges')
+      .select('id, slug, label, icon, sort_order')
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => setBadges((data as Badge[]) ?? []));
+  }, []);
+
   return (
-    <div className="min-h-screen bg-kraft-50 flex flex-col">
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b border-kraft-300 bg-kraft-50/98 backdrop-blur-sm">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="text-kraft-black font-semibold tracking-tight kraftplace-wordmark text-lg">Kraftplace</span>
-          <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider text-kraft-600 border border-kraft-400 bg-kraft-200">
+    <div
+      className="h-screen overflow-hidden flex flex-col"
+      style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(251,251,253,0.98), #FBFBFD)' }}
+    >
+      {/* Barre de menu ultra-fine - style Papier Kraft */}
+      <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-[#1A1A1A] font-semibold tracking-tight kraftplace-wordmark text-base">Kraftplace</span>
+          <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider text-[#5c4a38] bg-[#c9b896]/40 border border-[#C4B09A]">
             Beta
           </span>
         </Link>
-        <nav className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <Link
-            href={user ? '/admin' : '/login'}
-            className="text-sm font-medium text-kraft-800 hover:text-kraft-black underline underline-offset-2"
-          >
-            Se connecter
-          </Link>
-          <ButtonShowroom href="/signup?type=showroom">
-            <span className="block text-center leading-tight">
-              <span className="block font-bold">Je suis une boutique</span>
-              <span className="block text-xs font-normal opacity-90">s&apos;inscrire</span>
-            </span>
-          </ButtonShowroom>
-          <ButtonBrand href="/signup?type=brand">
-            <span className="block text-center leading-tight">
-              <span className="block font-bold">Je suis une marque</span>
-              <span className="block text-xs font-normal opacity-90">s&apos;inscrire</span>
-            </span>
-          </ButtonBrand>
-        </nav>
+        <Link
+          href={user ? '/admin' : '/login'}
+          className="text-xs font-medium text-[#1A1A1A]/90 hover:text-[#1A1A1A] transition-colors"
+        >
+          Connexion
+        </Link>
       </header>
 
-      <main className="flex-1">
-        {/* Hero - esprit Vinted B2B */}
-        <section className="px-4 py-16 sm:py-24 text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-kraft-black tracking-tight max-w-4xl mx-auto leading-tight">
-            Kraftplace, la plateforme qui va vous faire adorer le commerce en direct.
+      {/* Contenu central - hero + cartes */}
+      <main className="flex-1 flex flex-col min-h-0">
+        <section className="flex-1 flex flex-col items-center justify-center px-4 py-6 min-h-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-neutral-900 tracking-tight max-w-2xl mx-auto leading-[1.2] text-center">
+            <span className="font-bold">Kraftplace.</span> Le trait d&apos;union entre <span className="font-bold text-neutral-900">lieux engagés</span> et <span className="font-bold text-neutral-900">marques éthiques</span>.
           </h1>
-          <p className="mt-6 text-base sm:text-lg text-kraft-700 max-w-2xl mx-auto leading-relaxed">
-            Une communauté, des centaines de lieux de vente et des créateurs uniques. Prêt à vous lancer ? Découvrez comment ça marche !
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <ButtonBrand href="/#marques" className="w-full sm:w-auto px-8 py-4 text-base">
-              Lancer ma marque
-              <Sparkles className="h-5 w-5" />
-            </ButtonBrand>
-            <ButtonShowroom href="/#boutiques" className="w-full sm:w-auto px-8 py-4 text-base">
-              Ouvrir ma sélection
-              <Store className="h-5 w-5" />
-            </ButtonShowroom>
-          </div>
-
-          {/* Sélection immersive Marque / Boutique - design premium */}
-          <section className="mt-16 sm:mt-24 lg:mt-28" aria-label="Choisir votre profil">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* Carte Marque - atelier minimaliste */}
-              <Link
-                href="/#marques"
-                className="group relative flex min-h-[380px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-kraft-black focus-visible:ring-offset-2"
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out group-hover:scale-105"
-                  style={{
-                    backgroundImage: 'url(https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&q=80)',
-                  }}
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition-colors duration-300 group-hover:from-black/92 group-hover:via-black/50"
-                  aria-hidden
-                />
-                <div className="relative z-10 flex flex-col justify-end p-6 sm:p-8 lg:p-10 text-white">
-                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-white/95 mb-2">
-                    Créateurs & marques
-                  </p>
-                  <p className="mt-2 text-sm sm:text-base text-white/90 leading-relaxed max-w-md font-sans">
-                    Propulsez votre marque dans le monde physique. Accédez à une sélection de boutiques curatées et gérez vos partenariats en direct.
-                  </p>
-                  <span className="mt-6 inline-flex items-center gap-2 w-fit px-5 py-2.5 rounded-full bg-white text-kraft-black border border-kraft-900/30 text-sm font-bold shadow-sm transition-all duration-300 group-hover:bg-kraft-50 group-hover:gap-3">
-                    Dénicher des lieux de vente
-                    <span className="inline-block transition-transform duration-300 group-hover:translate-x-0.5">→</span>
-                  </span>
-                </div>
-              </Link>
-
-              {/* Carte Boutique - boutique créateur lumineuse */}
-              <Link
-                href="/#boutiques"
-                className="group relative flex min-h-[380px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-kraft-black focus-visible:ring-offset-2"
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out group-hover:scale-105"
-                  style={{
-                    backgroundImage: 'url(https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80)',
-                  }}
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition-colors duration-300 group-hover:from-black/92 group-hover:via-black/50"
-                  aria-hidden
-                />
-                <div className="relative z-10 flex flex-col justify-end p-6 sm:p-8 lg:p-10 text-white">
-                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-white/95 mb-2">
-                    Lieux de vente & showrooms
-                  </p>
-                  <p className="mt-2 text-sm sm:text-base text-white/90 leading-relaxed max-w-md font-sans">
-                    Devenez une destination. Dénichez des créateurs uniques, automatisez vos contrats et dynamisez vos rayons.
-                  </p>
-                  <span className="mt-6 inline-flex items-center gap-2 w-fit px-5 py-2.5 rounded-full bg-kraft-black text-kraft-off-white text-sm font-bold transition-all duration-300 group-hover:bg-kraft-900 group-hover:gap-3">
-                    Dénicher des marques
-                    <span className="inline-block transition-transform duration-300 group-hover:translate-x-0.5">→</span>
-                  </span>
-                </div>
-              </Link>
-            </div>
-          </section>
-        </section>
-
-        {/* Parcours Créateur */}
-        <section id="marques" className="px-4 py-14 sm:py-20 border-t border-kraft-300 bg-kraft-50 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-kraft-black tracking-tight">
-              Pour les Créateurs
-            </h2>
-            <p className="mt-2 text-lg font-medium text-kraft-700">
-              Vendre en boutique, c’est simple
-            </p>
-            <div className="mt-10 grid sm:grid-cols-3 gap-8 sm:gap-6">
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">1</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Postulez gratuitement</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Créez votre catalogue en quelques minutes. Parcourez les boutiques, sélectionnez vos dates et envoyez votre candidature en un clic.
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <Send className="h-3.5 w-3.5" /> Candidature en un clic
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">2</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Discutez et fixez vos conditions</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Échangez directement avec le gérant de la boutique via notre messagerie intégrée. Validez ensemble le loyer ou la commission et signez votre contrat numériquement.
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <MessageCircle className="h-3.5 w-3.5" /> Messagerie intégrée
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">3</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Chat ouvert</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Une fois votre candidature acceptée, échangez librement avec la boutique et développez votre réseau de points de vente.
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <MessageCircle className="h-3.5 w-3.5" /> Dialogue direct
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-10 text-center">
-              <ButtonBrand href={user ? '/admin' : '/signup?type=brand'} className="px-8 py-4 text-base">
-                Dénicher des lieux de vente
-                <Sparkles className="h-5 w-5" />
-              </ButtonBrand>
-            </div>
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch justify-center gap-6 sm:gap-12 max-w-xl w-full">
+            <Link
+              href={user ? '/admin' : '/signup?type=brand'}
+              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-transparent py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-[#FBFBFD] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+            >
+              <Sparkles className="h-10 w-10 sm:h-11 sm:w-11 text-neutral-700 mb-3" strokeWidth={1} aria-hidden />
+              <span className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Marque</span>
+              <p className="mt-1.5 text-[12px] font-normal text-neutral-400 leading-snug max-w-[180px]">
+                Trouvez des boutiques qui valorisent votre artisanat.
+              </p>
+            </Link>
+            <Link
+              href={user ? '/admin' : '/signup?type=showroom'}
+              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-transparent py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-[#FBFBFD] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+            >
+              <Store className="h-10 w-10 sm:h-11 sm:w-11 text-neutral-700 mb-3" strokeWidth={1} aria-hidden />
+              <span className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Boutique</span>
+              <p className="mt-1.5 text-[12px] font-normal text-neutral-400 leading-snug max-w-[180px]">
+                Sourcez des créateurs qui enrichissent votre univers éthique.
+              </p>
+            </Link>
           </div>
         </section>
 
-        {/* Parcours Boutique */}
-        <section id="boutiques" className="px-4 py-14 sm:py-20 border-t border-kraft-300 bg-kraft-100/60 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-kraft-black tracking-tight">
-              Pour les Boutiques
-            </h2>
-            <p className="mt-2 text-lg font-medium text-kraft-700">
-              Sourcez en toute sécurité
-            </p>
-            <div className="mt-10 grid sm:grid-cols-3 gap-8 sm:gap-6">
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">1</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Trouvez la pépite</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Accédez à une sélection de marques créatives prêtes à exposer chez vous. Filtrez par style, univers ou conditions de vente.
-                </p>
-              </div>
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">2</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Sélectionnez en un clic</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Recevez des candidatures complètes (photos, prix, documents légaux) et échangez avec les créateurs pour affiner votre sélection.
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <MessageCircle className="h-3.5 w-3.5" /> Tout dans la messagerie
+        {/* Footer-Nav : 3 mots-clés avec tooltips */}
+        <nav className="shrink-0 flex items-center justify-center gap-2 sm:gap-4 px-4 py-3 border-t border-black/[0.06] bg-white/40" aria-label="Comment ça marche">
+          {FOOTER_STEPS.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <span key={step.label} className="inline-flex items-center gap-2">
+                {i > 0 && <span className="text-neutral-300 select-none" aria-hidden>·</span>}
+                <span
+                  tabIndex={0}
+                  className="group relative inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/30 focus-visible:ring-offset-1 rounded-md transition-colors cursor-default"
+                  aria-label={`${step.label}. ${step.tooltip}`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1} aria-hidden />
+                  <span>{step.label}</span>
+                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-neutral-900 text-white text-[10px] font-normal leading-snug opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-visible:opacity-100 group-focus-visible:visible transition-all duration-150 w-[180px] max-w-[calc(100vw-2rem)] text-center z-10 shadow-lg">
+                    {step.tooltip}
                   </span>
-                </div>
-              </div>
-              <div className="flex flex-col sm:items-center sm:text-center p-6 rounded-2xl bg-white border-2 border-kraft-300 shadow-sm">
-                <span className="flex items-center justify-center w-12 h-12 rounded-full bg-kraft-300 text-kraft-900 font-bold text-lg shrink-0">3</span>
-                <h3 className="mt-4 font-bold text-kraft-black text-lg">Gérez sans effort</h3>
-                <p className="mt-2 text-sm text-kraft-700 leading-relaxed">
-                  Centralisez vos contrats et vos paiements sur un seul dashboard. Suivez l’arrivée des collections et commencez à vendre.
-                </p>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-kraft-600">
-                    <LayoutGrid className="h-3.5 w-3.5" /> Dashboard + Stripe
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-10 text-center">
-              <ButtonShowroom href={user ? '/admin' : '/signup?type=showroom'} className="px-8 py-4 text-base">
-                Dénicher des marques
-                <Store className="h-5 w-5" />
-              </ButtonShowroom>
-            </div>
-          </div>
-        </section>
+                </span>
+              </span>
+            );
+          })}
+        </nav>
 
-        {/* Bannière de conclusion - Prêt à vous lancer ? */}
-        <section className="px-4 py-14 sm:py-20 border-t border-kraft-900 bg-kraft-black text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-kraft-off-white tracking-tight max-w-xl mx-auto">
-            Prêt à vous lancer ?
-          </h2>
-          <p className="mt-3 text-kraft-300 text-sm sm:text-base">
-            Rejoignez la communauté. Créateurs et boutiques, tout se passe sur Kraftplace.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row flex-wrap justify-center gap-4">
-            <ButtonBrand href={user ? '/admin' : '/signup?type=brand'} className="px-8 py-4 text-base">
-              Dénicher des lieux de vente
-              <Sparkles className="h-5 w-5" />
-            </ButtonBrand>
-            <ButtonShowroom href={user ? '/admin' : '/signup?type=showroom'} className="px-8 py-4 text-base border-2 border-kraft-off-white/50 hover:border-kraft-off-white/80">
-              Dénicher des marques
-              <Store className="h-5 w-5" />
-            </ButtonShowroom>
+        {/* Bandeau badges - très fin et discret en bas */}
+        {badges.length > 0 && (
+          <div className="shrink-0 h-9 border-t border-black/[0.06] bg-white/30 overflow-hidden flex items-center">
+            <div className="flex w-max animate-scroll-badges items-center gap-3 px-4">
+              {Array.from({ length: BADGE_DUPLICATES }).map((_, block) => (
+                <div key={block} className="flex items-center gap-3 shrink-0">
+                  {badges.map((badge) => (
+                    <span
+                      key={`${block}-${badge.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-neutral-600 border border-black/[0.05] shrink-0"
+                      aria-hidden
+                    >
+                      <BadgeIcon badge={badge} className="w-3.5 h-3 shrink-0 inline-block" />
+                      <span>{badge.label}</span>
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
+        )}
       </main>
-
-      <footer className="px-4 py-6 border-t border-kraft-300 bg-kraft-100 text-center text-sm text-kraft-700">
-        Kraftplace · Mise en relation marques & boutiques
-      </footer>
     </div>
   );
 }

@@ -122,13 +122,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
   }
 
+  const enrichedMetadata: Record<string, unknown> = { ...(metadata ?? {}), status: (metadata?.status as string) ?? 'pending' };
+  const listingIdVal = typeof listingId === 'number' ? listingId : null;
+  if (listingIdVal != null) {
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('partnership_start_date, partnership_end_date')
+      .eq('id', listingIdVal)
+      .single();
+    if (listing) {
+      const row = listing as { partnership_start_date?: string | null; partnership_end_date?: string | null };
+      if (row.partnership_start_date) enrichedMetadata.partnership_start_at = row.partnership_start_date;
+      if (row.partnership_end_date) enrichedMetadata.partnership_end_at = row.partnership_end_date;
+    }
+  }
+  const { data: showroomRow } = await supabase
+    .from('showrooms')
+    .select('name, city')
+    .eq('id', showroomId)
+    .single();
+  if (showroomRow) {
+    const s = showroomRow as { name?: string | null; city?: string | null };
+    if (s.name) enrichedMetadata.showroom_name = s.name;
+    if (s.city) enrichedMetadata.showroom_city = s.city;
+  }
+
   const { error: msgErr } = await supabase.from('messages').insert({
     conversation_id: conversationId,
     type: 'CANDIDATURE_SENT',
     sender_id: user.user.id,
     sender_role: 'brand',
     content: motivationMessage?.trim() || null,
-    metadata: metadata ?? { status: 'pending' },
+    metadata: enrichedMetadata,
     is_read: false,
   });
 

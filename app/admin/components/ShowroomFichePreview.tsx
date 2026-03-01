@@ -143,13 +143,13 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
       {ownerView ? (
         <Link
           href="/admin/showroom-config"
-          className="block w-full py-2.5 rounded-lg text-sm font-medium text-center bg-neutral-900 text-white hover:bg-neutral-800"
+          className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition-colors duration-150"
         >
           Modifier mon profil
         </Link>
       ) : (
         <div
-          className={`w-full py-2.5 rounded-lg text-sm font-medium text-center ${
+          className={`flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-medium ${
             candidatureStatus === 'open'
               ? 'bg-neutral-900 text-white'
               : candidatureStatus === 'upcoming'

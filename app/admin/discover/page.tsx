@@ -111,8 +111,12 @@ export default function DiscoverPage() {
   const [brandBadgeSlugs, setBrandBadgeSlugs] = useState<string[]>([]);
   const [openCityPopover, setOpenCityPopover] = useState(false);
   const [openUrgencyPopover, setOpenUrgencyPopover] = useState(false);
+  const [openMonthPopover, setOpenMonthPopover] = useState(false);
+  const [openCommissionPopover, setOpenCommissionPopover] = useState(false);
   const cityPopoverRef = useRef<HTMLDivElement>(null);
   const urgencyPopoverRef = useRef<HTMLDivElement>(null);
+  const monthPopoverRef = useRef<HTMLDivElement>(null);
+  const commissionPopoverRef = useRef<HTMLDivElement>(null);
   const next6Months = getNext6Months();
 
   const credits = typeof activeBrand?.credits === 'number' ? activeBrand.credits : 0;
@@ -251,6 +255,8 @@ export default function DiscoverPage() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (cityPopoverRef.current && !cityPopoverRef.current.contains(e.target as Node)) setOpenCityPopover(false);
+      if (monthPopoverRef.current && !monthPopoverRef.current.contains(e.target as Node)) setOpenMonthPopover(false);
+      if (commissionPopoverRef.current && !commissionPopoverRef.current.contains(e.target as Node)) setOpenCommissionPopover(false);
       if (urgencyPopoverRef.current && !urgencyPopoverRef.current.contains(e.target as Node)) setOpenUrgencyPopover(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -445,24 +451,32 @@ export default function DiscoverPage() {
     );
   }
 
-  return (
-    <div className="min-h-[60vh] bg-[#faf8f5]">
-      <h1 className="text-xl font-light text-neutral-900 tracking-tight">Vendre mes produits</h1>
-      <p className="mt-0.5 text-sm text-neutral-500 font-light">Les boutiques qui partagent vos valeurs apparaissent en premier.</p>
+  const monthLabel = filterMonths.length === 0
+    ? 'tous les mois'
+    : filterMonths.length === 1
+      ? (next6Months.find((m) => m.year === filterMonths[0].year && m.month === filterMonths[0].month)?.shortLabel ?? 'mois')
+      : `${filterMonths.length} mois`;
+  const commissionLabel = filterCommissionType === 'all' ? 'tous' : filterCommissionType === 'commission' ? '%' : filterCommissionType === 'rent' ? 'loyer' : 'hybride';
 
-      <div className="sticky top-0 z-10 mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 py-4 transition-[backdrop-filter] duration-200 supports-[backdrop-filter]:bg-[#faf8f5]/80 supports-[backdrop-filter]:backdrop-blur-md">
-        {cities.length > 0 && (
-          <>
-            <div className="relative shrink-0" ref={cityPopoverRef}>
+  return (
+    <div className="min-h-[60vh] bg-[#FBFBFD]">
+      <h1 className="text-xl font-light text-neutral-900 tracking-tight">Explorer</h1>
+      <p className="mt-0.5 text-sm text-neutral-500 font-light">Boutiques qui partagent vos valeurs.</p>
+
+      <div className="sticky top-0 z-10 mt-6 py-4 transition-[backdrop-filter] duration-200 bg-[#FBFBFD]/70 backdrop-blur-md">
+        <p className="text-sm font-light text-neutral-500 flex flex-wrap items-center gap-x-1 gap-y-2">
+          Boutiques à{' '}
+          {cities.length > 0 ? (
+            <span className="relative inline-flex" ref={cityPopoverRef}>
               <button
                 type="button"
-                onClick={() => { setOpenCityPopover((v) => !v); setOpenUrgencyPopover(false); }}
-                className="text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
+                onClick={() => { setOpenCityPopover((v) => !v); setOpenUrgencyPopover(false); setOpenMonthPopover(false); setOpenCommissionPopover(false); }}
+                className="font-semibold text-neutral-900 hover:underline underline-offset-2"
               >
-                {filterCity ?? 'Toutes les villes'}
+                {filterCity ?? 'toutes les villes'}
               </button>
               {openCityPopover && (
-                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[8rem] rounded-lg bg-white/95 py-1.5 shadow-lg ring-1 ring-neutral-200/60 backdrop-blur-sm transition-opacity duration-150 opacity-100">
+                <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[8rem] rounded-xl bg-white/95 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md">
                   <button type="button" onClick={() => { setFilterCity(null); setOpenCityPopover(false); }} className="w-full px-3 py-2 text-left text-sm font-medium text-neutral-700 hover:bg-neutral-100/80 transition-colors">
                     Toutes les villes
                   </button>
@@ -473,37 +487,80 @@ export default function DiscoverPage() {
                   ))}
                 </div>
               )}
-            </div>
-            <span className="h-3 w-[0.5px] shrink-0 bg-neutral-300/70" aria-hidden />
-          </>
-        )}
-        <div className="flex items-center gap-x-1 shrink-0 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setFilterMonths([])}
-            className={`relative px-1 py-0.5 pb-1 text-[11px] transition-colors duration-150 ${filterMonths.length === 0 ? 'font-bold text-neutral-900' : 'font-medium text-neutral-500 hover:text-neutral-700'}`}
-          >
-            Tous
-            {filterMonths.length === 0 && <span className="absolute left-1/2 -translate-x-1/2 bottom-0.5 w-0.5 h-0.5 rounded-full bg-neutral-900" aria-hidden />}
-          </button>
-          <span className="text-neutral-400 font-light">·</span>
-          {next6Months.map(({ year, month, shortLabel }) => {
-            const selected = filterMonths.some((fm) => fm.year === year && fm.month === month);
-            return (
-              <button
-                key={`${year}-${month}`}
-                type="button"
-                onClick={() => toggleFilterMonth(year, month)}
-                className={`relative px-1 py-0.5 pb-1 text-[11px] transition-colors duration-150 ${selected ? 'font-bold text-neutral-900' : 'font-medium text-neutral-500 hover:text-neutral-700'}`}
-              >
-                {shortLabel}
-                {selected && <span className="absolute left-1/2 -translate-x-1/2 bottom-0.5 w-0.5 h-0.5 rounded-full bg-neutral-900" aria-hidden />}
+            </span>
+          ) : (
+            <span className="font-semibold text-neutral-900">toutes les villes</span>
+          )}
+          {' '}disponibles en{' '}
+          <span className="relative inline-flex" ref={monthPopoverRef}>
+            <button
+              type="button"
+              onClick={() => { setOpenMonthPopover((v) => !v); setOpenCityPopover(false); setOpenUrgencyPopover(false); setOpenCommissionPopover(false); }}
+              className="font-semibold text-neutral-900 hover:underline underline-offset-2"
+            >
+              {monthLabel}
+            </button>
+            {openMonthPopover && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[10rem] rounded-xl bg-white/95 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md">
+                <button type="button" onClick={() => { setFilterMonths([]); setOpenMonthPopover(false); }} className="w-full px-3 py-2 text-left text-sm font-medium text-neutral-700 hover:bg-neutral-100/80 transition-colors">
+                  Tous les mois
+                </button>
+                {next6Months.map(({ year, month, shortLabel }) => {
+                  const selected = filterMonths.some((fm) => fm.year === year && fm.month === month);
+                  return (
+                    <button key={`${year}-${month}`} type="button" onClick={() => { toggleFilterMonth(year, month); setOpenMonthPopover(false); }} className={`w-full px-3 py-2 text-left text-sm font-medium transition-colors ${selected ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-700 hover:bg-neutral-100/80'}`}>
+                      {shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </span>
+          {' '}avec commission{' '}
+          <span className="relative inline-flex" ref={commissionPopoverRef}>
+            <button
+              type="button"
+              onClick={() => { setOpenCommissionPopover((v) => !v); setOpenCityPopover(false); setOpenUrgencyPopover(false); setOpenMonthPopover(false); }}
+              className="font-semibold text-neutral-900 hover:underline underline-offset-2"
+            >
+              {commissionLabel}
+            </button>
+            {openCommissionPopover && (
+              <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[8rem] rounded-xl bg-white/95 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md">
+                {(['all', 'commission', 'rent', 'hybrid'] as const).map((value) => (
+                  <button key={value} type="button" onClick={() => { setFilterCommissionType(value); setOpenCommissionPopover(false); }} className={`w-full px-3 py-2 text-left text-sm font-medium transition-colors ${filterCommissionType === value ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-700 hover:bg-neutral-100/80'}`}>
+                    {value === 'all' ? 'Tous' : value === 'commission' ? 'Commission %' : value === 'rent' ? 'Loyer' : 'Hybride'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </span>
+          {' · '}
+          <span className="relative inline-flex" ref={urgencyPopoverRef}>
+            <button type="button" onClick={() => { setOpenUrgencyPopover((v) => !v); setOpenCityPopover(false); setOpenMonthPopover(false); setOpenCommissionPopover(false); }} className="font-semibold text-neutral-900 hover:underline underline-offset-2">
+              {filterClosesInDays != null ? `ferme dans ${filterClosesInDays} j` : 'délai'}
+            </button>
+            {openUrgencyPopover && (
+              <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[10rem] rounded-xl bg-white/95 py-2 px-2 shadow-[0_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md">
+                <p className="text-[11px] font-medium text-neutral-500 px-2 pb-1.5">Ferme dans</p>
+                {[null, 7, 15, 30].map((days) => (
+                  <button key={days ?? 'all'} type="button" onClick={() => { setFilterClosesInDays(days); setOpenUrgencyPopover(false); }} className={`w-full px-3 py-1.5 text-left text-sm font-medium rounded-md transition-colors ${filterClosesInDays === days ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100/80'}`}>
+                    {days == null ? 'Tous' : `${days} jours`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </span>
+          {hasActiveFilters && (
+            <>
+              {' · '}
+              <button type="button" onClick={clearAllFilters} className="font-medium text-neutral-500 hover:text-neutral-900 transition-colors duration-150">
+                Réinitialiser
               </button>
-            );
-          }).reduce<React.ReactNode[]>((acc, el, i) => (i === 0 ? [el] : [...acc, <span key={`s-${i}`} className="text-neutral-400 font-light">·</span>, el]), [])}
-        </div>
-        <span className="h-3 w-[0.5px] shrink-0 bg-neutral-300/70" aria-hidden />
-        <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            </>
+          )}
+        </p>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
           {allBadges.map((badge) => {
             const selected = filterBadgeSlugs.includes(badge.slug);
             return (
@@ -511,65 +568,17 @@ export default function DiscoverPage() {
                 key={badge.id}
                 type="button"
                 onClick={() => toggleFilterBadge(badge.slug)}
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-all duration-150 ${selected ? 'bg-neutral-900 text-white ring-1 ring-neutral-900' : 'bg-transparent text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900'}`}
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${selected ? 'bg-neutral-900 text-white shadow-md' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-800'}`}
                 title={badge.label}
               >
-                <BadgeIcon badge={badge} className="w-4 h-4" />
+                <BadgeIcon badge={badge} className="w-5 h-5" />
               </button>
             );
           })}
         </div>
-        <span className="h-3 w-[0.5px] shrink-0 bg-neutral-300/70" aria-hidden />
-        <div className="inline-flex rounded-md p-0.5 bg-neutral-200/50 shrink-0">
-          {(['all', 'commission', 'rent', 'hybrid'] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFilterCommissionType(value)}
-              className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all duration-150 ${filterCommissionType === value ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
-            >
-              {value === 'all' ? 'Tous' : value === 'commission' ? 'Commission' : value === 'rent' ? 'Loyer' : 'Hybride'}
-            </button>
-          ))}
-        </div>
-        <span className="h-3 w-[0.5px] shrink-0 bg-neutral-300/70" aria-hidden />
-        <div className="relative shrink-0" ref={urgencyPopoverRef}>
-          <button
-            type="button"
-            onClick={() => { setOpenUrgencyPopover((v) => !v); setOpenCityPopover(false); }}
-            className={`flex items-center justify-center w-8 h-8 rounded-full text-base transition-all duration-150 ${filterClosesInDays != null ? 'bg-amber-100 text-amber-800' : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700'}`}
-            title="Ferme dans"
-            aria-label="Filtrer par urgence de clôture"
-          >
-            ⏳
-          </button>
-          {openUrgencyPopover && (
-            <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[10rem] rounded-lg bg-white/95 py-2 px-2 shadow-lg ring-1 ring-neutral-200/60 backdrop-blur-sm transition-opacity duration-150 opacity-100">
-              <p className="text-[11px] font-medium text-neutral-500 px-2 pb-1.5">Ferme dans</p>
-              {[null, 7, 15, 30].map((days) => (
-                <button
-                  key={days ?? 'all'}
-                  type="button"
-                  onClick={() => { setFilterClosesInDays(days); setOpenUrgencyPopover(false); }}
-                  className={`w-full px-3 py-1.5 text-left text-sm font-medium rounded-md transition-colors ${filterClosesInDays === days ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-100/80'}`}
-                >
-                  {days == null ? 'Tous' : `${days} jours`}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {hasActiveFilters && (
-          <>
-            <span className="h-3 w-[0.5px] shrink-0 bg-neutral-300/70" aria-hidden />
-            <button type="button" onClick={clearAllFilters} className="text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors duration-150">
-              Réinitialiser
-            </button>
-          </>
-        )}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredRows.map((row) => {
           const rowBadges = badgesByShowroomId[row.showroom.id] ?? [];
           const matchingSlugs = rowBadges.filter((b) => brandBadgeSlugs.includes(b.slug)).map((b) => b.slug);

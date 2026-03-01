@@ -19,7 +19,7 @@ export default function AdminMessagingRedirect() {
 
   return (
     <div className="p-6 flex items-center justify-center">
-      <p className="text-neutral-500">Redirection vers la messagerie…</p>
+      <p className="text-sm font-light text-neutral-500">Redirection…</p>
     </div>
   );
 }

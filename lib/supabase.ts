@@ -242,15 +242,6 @@ export type CandidatureThreadMessage = {
   metadata: Record<string, unknown> | null;
 };
 
-export type Notification = {
-  id: string;
-  user_id: string;
-  type: string;
-  reference_id: string | null;
-  title: string;
-  body: string | null;
-  read: boolean;
-  created_at: string | null;
-};
+// Table notifications supprimée de l’UX (voir archive SQL si besoin). Plus de type exporté.
 
 // Paiements (flux marketplace) - désactivés, types retirés.

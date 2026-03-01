@@ -207,7 +207,7 @@ export default function CurationPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" strokeWidth={1.5} />
       </div>
     );
   }
@@ -215,7 +215,7 @@ export default function CurationPage() {
   if (entityType !== 'showroom' || !activeShowroom) {
     return (
       <div className="max-w-md mx-auto py-12 text-center">
-        <p className="text-neutral-600">Sélectionnez une boutique pour voir la messagerie.</p>
+        <p className="text-sm font-light text-neutral-500">Sélectionnez une boutique.</p>
       </div>
     );
   }
@@ -224,24 +224,24 @@ export default function CurationPage() {
     <div>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Messagerie</h1>
-          <p className="mt-1 text-sm text-neutral-500">Un bloc par marque. Ouvrez une conversation pour voir tout l’historique des échanges et envoyer des messages.</p>
+          <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Partenariats</h1>
+          <p className="mt-0.5 text-sm font-light text-neutral-500">Candidatures par marque. Ouvrez une conversation pour voir tout l’historique des échanges et envoyer des messages.</p>
         </div>
         <button
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-black/[0.08] text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 transition-colors"
         >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} strokeWidth={1.5} />
           Rafraîchir
         </button>
       </div>
 
       {candidatures.length === 0 && (
-        <div className="mt-8 p-8 rounded-xl border border-neutral-200 bg-white text-center text-neutral-500">
-          <Package className="h-10 w-10 mx-auto text-neutral-300 mb-2" />
-          <p>Aucune candidature pour le moment.</p>
+        <div className="mt-8 p-8 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-center">
+          <Package className="h-10 w-10 mx-auto text-neutral-300 mb-2" strokeWidth={1.5} />
+          <p className="text-sm font-light text-neutral-500">Aucune candidature.</p>
         </div>
       )}
 
@@ -252,8 +252,8 @@ export default function CurationPage() {
             const { brand: brandInfo, candidatures: brandCandidatures } = candidaturesByBrand[brandId];
             const hasPending = brandCandidatures.some((c) => c.status === 'pending');
             return (
-              <section key={`c-${brandId}`} className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-                <div className="p-4 border-b border-neutral-100 bg-neutral-50/50 flex items-center gap-3 flex-wrap">
+              <section key={`c-${brandId}`} className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+                <div className="p-4 border-b border-black/[0.06] flex items-center gap-3 flex-wrap">
                   {brandInfo?.avatar_url?.trim() ? (
                     <img src={brandInfo.avatar_url.trim()} alt="" className="w-12 h-12 rounded-full object-cover border border-neutral-200 shrink-0" />
                   ) : (
@@ -284,9 +284,9 @@ export default function CurationPage() {
                   <button
                     type="button"
                     onClick={() => activeShowroom && openMessenger({ brandId, showroomId: activeShowroom.id, title: brandInfo?.brand_name ?? 'Marque', avatarUrl: brandInfo?.avatar_url })}
-                    className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
+                    className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
                     Messagerie
                   </button>
                 </div>

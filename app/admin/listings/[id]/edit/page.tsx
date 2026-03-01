@@ -178,7 +178,8 @@ export default function EditListingPage() {
         <ArrowLeft className="h-4 w-4" />
         Retour aux annonces
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900">Modifier l’annonce</h1>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Modifier l’annonce</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Session et candidatures.</p>
 
       {isEphemeral && existenceStart && existenceEnd && (
         <div className="mt-4 p-3 rounded-xl bg-amber-50/80 border border-amber-200/60 text-sm text-amber-900">

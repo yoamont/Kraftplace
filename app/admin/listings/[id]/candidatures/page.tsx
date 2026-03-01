@@ -104,17 +104,17 @@ export default function ListingCandidaturesPage() {
         <ArrowLeft className="h-4 w-4" />
         Retour aux annonces
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900">Candidatures · {listingTitle}</h1>
-      <p className="mt-1 text-sm text-neutral-500">Marques ayant postulé à cette session.</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Candidatures · {listingTitle}</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Marques ayant postulé à cette session.</p>
 
       <ul className="mt-6 space-y-2">
         {convs.length === 0 ? (
-          <li className="rounded-lg border border-neutral-200 bg-neutral-50 p-6 text-center text-neutral-500 text-sm">
+          <li className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-6 text-center text-sm font-light text-neutral-500">
             Aucune candidature pour cette annonce.
           </li>
         ) : (
           convs.map((c) => (
-            <li key={c.id} className="rounded-lg border border-neutral-200 bg-white p-3 flex items-center justify-between gap-3">
+            <li key={c.id} className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {c.brand?.avatar_url?.trim() ? (
                   <img src={c.brand.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-neutral-200" />
@@ -127,10 +127,10 @@ export default function ListingCandidaturesPage() {
               </div>
               <Link
                 href={`/messages?conversationId=${c.id}`}
-                className="inline-flex items-center gap-2 py-2 px-3 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 shrink-0"
+                className="inline-flex items-center gap-2 py-2 px-3 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 shrink-0 transition-colors duration-150"
               >
-                <MessageSquare className="h-4 w-4" />
-                Ouvrir la conversation
+                <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
+                Ouvrir
               </Link>
             </li>
           ))

@@ -1,17 +1,32 @@
 @import "tailwindcss";
 
-/* Kraftplace — Charte: beige/marron papier kraft, noir profond, blanc cassé. Contraste maximum. */
+/* Kraftplace - Charte premium Apple/Vercel/Linear : Off-white, contraste doux, ombres légères. */
 :root {
-  --background: #faf6ef;
-  --foreground: #0a0a0a;
+  --background: #FBFBFD;
+  --foreground: #171717;
+  --card-bg: #ffffff;
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --radius-card: 12px;
+  --radius-button: 12px;
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-playfair);
-  /* Palette kraft — beige/marron chaleureux (hex directs pour génération des utilitaires) */
-  --color-kraft-50: #faf6ef;
+  /* Page & surfaces */
+  --color-page: #FBFBFD;
+  --color-card: #ffffff;
+  /* Texte : Gray-900 pour contraste doux */
+  --color-text-primary: #171717;
+  --color-text-secondary: #525252;
+  --color-text-muted: #737373;
+  /* Bordures légères (0.5px visuel = très clair) */
+  --color-border-subtle: rgba(0, 0, 0, 0.06);
+  /* Palette kraft conservée pour identité (wordmark, accents) */
+  --color-kraft-50: #FBFBFD;
   --color-kraft-100: #f0e6d8;
   --color-kraft-200: #e2d4c2;
   --color-kraft-300: #c9b896;
@@ -22,29 +37,50 @@
   --color-kraft-800: #3d3228;
   --color-kraft-900: #2a231c;
   --color-kraft-950: #1a1612;
-  --color-kraft-black: #0a0a0a;
-  --color-kraft-off-white: #faf6ef;
+  --color-kraft-black: #171717;
+  --color-kraft-off-white: #FBFBFD;
+  /* Ombres douces */
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #faf6ef;
+    --foreground: #fafafa;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* Typo éditoriale — titres premium (sélecteur Marque/Boutique) */
+/* Cartes : ombre légère, pas de bordure lourde */
+.kp-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Boutons : rayons généreux, transitions fluides */
+.kp-btn {
+  border-radius: var(--radius-button);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Séparateurs ultra-fins */
+.kp-divide {
+  border-color: var(--color-border-subtle);
+}
+
+/* Typo éditoriale - titres premium (sélecteur Marque/Boutique) */
 .font-serif {
   font-family: var(--font-playfair), "Georgia", serif;
 }
 
-/* Wordmark — K très imposant, typo brute sans fioritures */
+/* Wordmark - K très imposant, typo brute sans fioritures */
 .kraftplace-wordmark {
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -53,5 +89,29 @@ body {
   font-size: 1.4em;
   font-weight: 900;
   letter-spacing: -0.05em;
+}
+
+/* Home : défilement lent des badges de valeurs */
+@keyframes scroll-badges {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+.animate-scroll-badges {
+  animation: scroll-badges 25s linear infinite;
+}
+
+/* Barre nav style Papier Kraft : couleur, texture recyclée, ombre intérieure */
+.nav-kraft {
+  --kraft-nav-bg: #D9C5B2;
+  --kraft-nav-border: #C4B09A;
+  background-color: var(--kraft-nav-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--kraft-nav-border);
 }
 

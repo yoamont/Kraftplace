@@ -71,7 +71,7 @@ export default function BrowseBrandsPage() {
   if (entityType === 'brand') {
     return (
       <div className="max-w-2xl mx-auto py-8 text-center">
-        <p className="text-kraft-700">Cette page est réservée aux boutiques. Sélectionnez une boutique dans le menu pour parcourir les marques.</p>
+        <p className="text-sm font-light text-neutral-500">Réservé aux boutiques.</p>
       </div>
     );
   }
@@ -79,17 +79,17 @@ export default function BrowseBrandsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-kraft-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" strokeWidth={1.5} />
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-xl font-semibold text-kraft-black">Dénichez vos prochaines marques coup de cœur.</h1>
-      <p className="mt-2 text-sm text-kraft-700 leading-relaxed">Une sélection exclusive de créateurs prêts à intégrer votre boutique. Parcourez leurs univers, explorez leurs produits phares et initiez la rencontre en un clic.</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Marques</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Créateurs et catalogues. Initiez la rencontre.</p>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {brands.map((brand) => {
           const topProducts = productsByBrandId[brand.id] ?? [];
           return (
@@ -101,10 +101,10 @@ export default function BrowseBrandsPage() {
             >
               <Link
                 href={`/marque/${brand.id}`}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
               >
                 Voir plus
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </Link>
             </BrandCard>
           );
@@ -112,10 +112,10 @@ export default function BrowseBrandsPage() {
       </div>
 
       {brands.length === 0 && !loading && (
-        <div className="mt-12 rounded-xl border-2 border-kraft-300 bg-kraft-100 p-12 text-center">
-          <Package className="h-12 w-12 text-kraft-500 mx-auto mb-4" />
-          <p className="text-kraft-700 font-medium">Aucune marque avec catalogue pour le moment.</p>
-          <p className="text-sm text-kraft-600 mt-1">Les marques apparaîtront ici dès qu’elles auront ajouté des produits.</p>
+        <div className="mt-12 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-12 text-center">
+          <Package className="h-12 w-12 text-neutral-400 mx-auto mb-4" strokeWidth={1.5} />
+          <p className="text-sm font-medium text-neutral-800">Aucune marque avec catalogue pour le moment.</p>
+          <p className="text-xs font-light text-neutral-500 mt-1">Les marques apparaîtront ici dès qu’elles auront ajouté des produits.</p>
         </div>
       )}
     </div>

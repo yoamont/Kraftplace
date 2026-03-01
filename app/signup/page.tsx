@@ -37,30 +37,30 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-kraft-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FBFBFD] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <Link href="/" className="inline-block text-kraft-black font-semibold kraftplace-wordmark text-lg mb-8">
+        <Link href="/" className="inline-block text-neutral-900 font-semibold kraftplace-wordmark text-lg mb-8">
           Kraftplace
         </Link>
-        <h1 className="text-2xl font-bold text-kraft-black">Créer un compte</h1>
-        <p className="mt-1 text-sm text-kraft-700">
-          {type === 'brand' ? 'Inscription en tant que marque' : type === 'showroom' ? 'Inscription en tant que boutique' : 'Rejoignez Kraftplace'}
+        <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Créer un compte</h1>
+        <p className="mt-0.5 text-sm font-light text-neutral-500">
+          {type === 'brand' ? 'Marque' : type === 'showroom' ? 'Boutique' : 'Rejoignez Kraftplace'}
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-kraft-800 mb-1">Email</label>
+            <label htmlFor="email" className="block text-xs font-medium text-neutral-600 mb-1">Email</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-lg border-2 border-kraft-300 bg-kraft-50 text-kraft-black placeholder:text-kraft-500 focus:outline-none focus:ring-2 focus:ring-kraft-black focus:border-kraft-black"
+              className="w-full px-4 py-2.5 rounded-xl border border-black/[0.08] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
               placeholder="vous@exemple.fr"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-kraft-800 mb-1">Mot de passe (min. 6 caractères)</label>
+            <label htmlFor="password" className="block text-xs font-medium text-neutral-600 mb-1">Mot de passe (min. 6 caractères)</label>
             <input
               id="password"
               type="password"
@@ -68,14 +68,14 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-3 rounded-lg border-2 border-kraft-300 bg-kraft-50 text-kraft-black placeholder:text-kraft-500 focus:outline-none focus:ring-2 focus:ring-kraft-black focus:border-kraft-black"
+              className="w-full px-4 py-2.5 rounded-xl border border-black/[0.08] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
             />
           </div>
-          {error && <p className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>}
+          {error && <p className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-xl">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-lg bg-kraft-black text-kraft-off-white font-bold text-base hover:bg-kraft-900 disabled:opacity-60 border-2 border-kraft-black transition-colors"
+            className="w-full py-3 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-60 transition-colors duration-150"
           >
             {loading ? 'Création…' : 'Créer mon compte'}
           </button>

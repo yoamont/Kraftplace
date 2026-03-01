@@ -93,12 +93,12 @@ export default function MarqueCollectionPage() {
 
   return (
     <div className="min-h-screen bg-kraft-50">
-      <header className="border-b border-kraft-300 bg-kraft-50">
+      <header className="border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-kraft-700 hover:text-kraft-black">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Kraftplace
           </Link>
-          <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-bold bg-kraft-black text-kraft-off-white hover:bg-kraft-900 border-2 border-kraft-black transition-colors">
+          <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-bold bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
             Connexion
           </Link>
         </div>

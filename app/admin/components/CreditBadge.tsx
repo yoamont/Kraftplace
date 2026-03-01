@@ -46,12 +46,10 @@ export function CreditBadge() {
   return (
     <Link
       href="/admin/credits"
-      className="mt-3 flex items-center gap-2 p-3 rounded-lg border border-kraft-200 bg-kraft-100/80 hover:bg-kraft-200/80 transition-colors"
+      className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800 transition-colors duration-150"
     >
-      <Coins className="h-4 w-4 text-kraft-700 shrink-0" />
-      <span className="text-sm font-semibold text-kraft-900">
-        ✨ {available} crédit{available !== 1 ? 's' : ''} disponible{available !== 1 ? 's' : ''}
-      </span>
+      <Coins className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+      <span>{available} crédit{available !== 1 ? 's' : ''}</span>
     </Link>
   );
 }

@@ -31,7 +31,7 @@ export default function ProductsPage() {
   if (entityLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" strokeWidth={1.5} />
       </div>
     );
   }
@@ -39,52 +39,53 @@ export default function ProductsPage() {
   if (entityType !== 'brand' || !activeBrand) {
     return (
       <div className="max-w-md mx-auto text-center py-12">
-        <p className="text-neutral-600">Sélectionnez une marque dans le menu pour gérer le catalogue.</p>
+        <p className="text-sm font-light text-neutral-500">Sélectionnez une marque pour gérer le catalogue.</p>
       </div>
     );
   }
 
   return (
     <div>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Catalogue</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500 mb-6">Produits de votre marque.</p>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-xl font-semibold text-neutral-900">Mon Catalogue</h1>
-        <Link href="/admin/products/add" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800">
-          <Plus className="h-4 w-4" /> Ajouter un produit
+        <Link href="/admin/products/add" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150">
+          <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter
         </Link>
       </div>
 
       {products.length === 0 ? (
-        <div className="rounded-xl border border-neutral-200 bg-white p-12 text-center">
-          <Package className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
-          <p className="text-neutral-600">Aucun produit. Ajoutez-en un pour commencer.</p>
-          <Link href="/admin/products/add" className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800">
-            <Plus className="h-4 w-4" /> Ajouter un produit
+        <div className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-12 text-center">
+          <Package className="h-12 w-12 text-neutral-300 mx-auto mb-4" strokeWidth={1.5} />
+          <p className="text-sm font-light text-neutral-500">Aucun produit.</p>
+          <Link href="/admin/products/add" className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150">
+            <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter un produit
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((p) => (
-            <article key={p.id} className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-              <div className="aspect-square bg-neutral-100">
+            <article key={p.id} className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+              <div className="aspect-square bg-neutral-50/80">
                 {p.image_url?.trim() ? (
                   <img src={p.image_url.trim()} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Package className="h-12 w-12 text-neutral-300" />
+                    <Package className="h-12 w-12 text-neutral-300" strokeWidth={1.5} />
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 px-3 py-2.5 border-t border-neutral-100 bg-neutral-50/50">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-t border-black/[0.06]">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-medium text-neutral-900 text-sm line-clamp-1">{p.product_name}</h3>
-                  <p className="text-neutral-600 font-medium text-sm">{Number(p.price).toFixed(2)} €</p>
+                  <p className="text-xs font-light text-neutral-500">{Number(p.price).toFixed(2)} €</p>
                 </div>
                 <Link
                   href={`/admin/products/${p.id}/edit`}
-                  className="shrink-0 p-2 rounded-lg text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
-                  aria-label="Modifier le produit"
+                  className="shrink-0 p-2 rounded-xl text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                  aria-label="Modifier"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-4 w-4" strokeWidth={1.5} />
                 </Link>
               </div>
             </article>

@@ -21,8 +21,8 @@ export type BrandCardProps = {
  */
 export function BrandCard({ brand, products = [], badges = [], children }: BrandCardProps) {
   return (
-    <article className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm flex flex-col">
-      <div className="aspect-[3/1] bg-neutral-100 relative">
+    <article className="rounded-[12px] bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200 flex flex-col">
+      <div className="aspect-[3/1] bg-neutral-50/80 relative">
         {brand.image_url?.trim() ? (
           <img src={brand.image_url.trim()} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -35,7 +35,7 @@ export function BrandCard({ brand, products = [], badges = [], children }: Brand
             {badges.slice(0, 5).map((b) => (
               <span
                 key={b.id}
-                className="inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-xs font-medium text-neutral-800 border border-neutral-200 shadow-sm"
+                className="inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-xs font-medium text-neutral-800 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
               >
                 <BadgeIcon badge={b} className="w-4 h-3 shrink-0 inline-block" />
                 <span>{b.label}</span>
@@ -44,9 +44,9 @@ export function BrandCard({ brand, products = [], badges = [], children }: Brand
           </div>
         )}
       </div>
-      <div className="p-4 flex-1 flex flex-col">
+      <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center border border-neutral-200">
+          <div className="w-12 h-12 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             {brand.avatar_url?.trim() ? (
               <img src={brand.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -61,13 +61,13 @@ export function BrandCard({ brand, products = [], badges = [], children }: Brand
           <p className="mt-2 text-sm text-neutral-400 italic">Description de la marque…</p>
         )}
         {products.length > 0 && (
-          <div className="mt-3">
+          <div className="mt-4">
             <div className="flex gap-2">
               {products.slice(0, 3).map((product) => (
                 <Link
                   key={product.id}
                   href={`/marque/${brand.id}#produits`}
-                  className="flex-1 min-w-0 flex flex-col rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden hover:border-neutral-300 transition-colors"
+                  className="flex-1 min-w-0 flex flex-col rounded-xl bg-neutral-50/80 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] transition-shadow duration-150"
                 >
                   <div className="aspect-square bg-neutral-100">
                     {product.image_url?.trim() ? (
@@ -91,7 +91,7 @@ export function BrandCard({ brand, products = [], badges = [], children }: Brand
             </div>
           </div>
         )}
-        <div className="mt-4">
+        <div className="mt-5">
           {children}
         </div>
       </div>

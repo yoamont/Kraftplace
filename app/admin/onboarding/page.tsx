@@ -128,8 +128,8 @@ export default function OnboardingPage() {
       <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6">
         <ArrowLeft className="h-4 w-4" /> Retour
       </Link>
-      <h1 className="text-2xl font-semibold text-neutral-900">{isBrand ? 'Créer ma marque' : 'Créer ma boutique'}</h1>
-      <p className="mt-1 text-neutral-500 text-sm">{isBrand ? 'Renseignez les informations de votre marque.' : 'Renseignez les informations de votre lieu.'}</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">{isBrand ? 'Marque' : 'Boutique'}</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">{isBrand ? 'Informations de votre marque.' : 'Informations de votre lieu.'}</p>
 
       <form onSubmit={isBrand ? handleCreateBrand : handleCreateShowroom} className="mt-8 space-y-5">
         {isBrand ? (

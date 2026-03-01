@@ -34,8 +34,8 @@ export default function CreditsPage() {
 
   if (entityType !== 'brand') {
     return (
-      <div className="p-6 max-w-2xl">
-        <p className="text-kraft-600">Cette page est réservée aux marques.</p>
+      <div className="max-w-2xl">
+        <p className="text-sm font-light text-neutral-500">Réservé aux marques.</p>
       </div>
     );
   }
@@ -43,37 +43,32 @@ export default function CreditsPage() {
   const credits = activeBrand?.credits ?? 0;
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold text-kraft-black flex items-center gap-2">
-        <Coins className="h-7 w-7" />
-        Crédits
-      </h1>
-      <p className="text-kraft-600 mt-1 mb-6">
-        Achetez des packs de crédits pour votre marque.
-      </p>
+    <div className="max-w-2xl">
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Crédits</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500 mb-6">Packs pour candidater.</p>
 
-      <div className="mb-8 p-4 rounded-xl bg-kraft-100 border border-kraft-200">
-        <p className="text-sm text-kraft-600">Solde actuel</p>
-        <p className="text-2xl font-semibold text-kraft-black">{credits} crédit{credits !== 1 ? 's' : ''}</p>
+      <div className="mb-8 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <p className="text-xs font-medium text-neutral-500">Solde actuel</p>
+        <p className="text-xl font-semibold text-neutral-900 mt-0.5">{credits} crédit{credits !== 1 ? 's' : ''}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {PACKS.map((pack) => (
           <div
             key={pack.id}
-            className="border border-kraft-200 rounded-xl p-5 hover:border-kraft-400 transition"
+            className="rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200"
           >
-            <h2 className="font-semibold text-kraft-black">{pack.label}</h2>
-            <p className="text-kraft-600 text-sm mt-1">{pack.credits} crédits</p>
-            <p className="mt-2 text-lg font-semibold">{pack.price} €</p>
+            <h2 className="font-semibold text-neutral-900">{pack.label}</h2>
+            <p className="text-sm font-light text-neutral-500 mt-1">{pack.credits} crédits</p>
+            <p className="mt-2 text-lg font-semibold text-neutral-900">{pack.price} €</p>
             <button
               type="button"
               onClick={() => handleBuy(pack.id)}
               disabled={loading !== null}
-              className="mt-4 w-full rounded-full bg-kraft-black text-white py-2.5 px-4 font-medium hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+              className="mt-4 w-full rounded-xl bg-neutral-900 text-white py-2.5 px-4 text-sm font-medium hover:bg-neutral-800 disabled:opacity-60 transition-colors duration-150 flex items-center justify-center gap-2"
             >
               {loading === pack.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
               ) : (
                 'Acheter'
               )}

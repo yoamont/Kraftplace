@@ -64,7 +64,7 @@ export default function AddProductPage() {
   if (entityType !== 'brand' || !activeBrand) {
     return (
       <div className="max-w-md mx-auto py-8 text-center">
-        <p className="text-neutral-600">Sélectionnez une marque pour ajouter un produit.</p>
+        <p className="text-sm font-light text-neutral-500">Sélectionnez une marque.</p>
         <Link href="/admin" className="mt-4 inline-block text-sm font-medium text-neutral-900 hover:underline">Retour au dashboard</Link>
       </div>
     );
@@ -75,7 +75,8 @@ export default function AddProductPage() {
       <Link href="/admin/products" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6">
         <ArrowLeft className="h-4 w-4" /> Retour au catalogue
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900">Ajouter un produit</h1>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Ajouter un produit</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Nouveau produit au catalogue.</p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1">Nom du produit *</label>
@@ -102,9 +103,9 @@ export default function AddProductPage() {
           <input type="number" min={0} value={stockMax} onChange={(e) => setStockMax(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="0" />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={loading} className="w-full py-3 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-60 flex items-center justify-center gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          Ajouter le produit
+        <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors">
+          {loading && <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />}
+          Ajouter
         </button>
       </form>
     </div>

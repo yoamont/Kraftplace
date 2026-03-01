@@ -148,8 +148,8 @@ export default function NewListingPage() {
         <ArrowLeft className="h-4 w-4" />
         Retour aux annonces
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900">Nouvelle annonce</h1>
-      <p className="mt-1 text-sm text-neutral-500">Définissez les dates de la session et la période d’ouverture des candidatures.</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Nouvelle annonce</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Dates de la session et ouverture des candidatures. d’ouverture des candidatures.</p>
 
       {isEphemeral && existenceStart && existenceEnd && (
         <div className="mt-4 p-3 rounded-xl bg-amber-50/80 border border-amber-200/60 text-sm text-amber-900">
