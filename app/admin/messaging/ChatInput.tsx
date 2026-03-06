@@ -35,7 +35,7 @@ export function ChatInput({ onSend, disabled, placeholder = 'Ã‰crire un messageâ
   }, [value]);
 
   return (
-    <div className="flex items-end gap-2 p-3 w-full bg-white">
+    <div className="flex items-end gap-2 p-2 md:p-3 w-full bg-white">
       <textarea
         ref={inputRef}
         value={value}
@@ -43,18 +43,18 @@ export function ChatInput({ onSend, disabled, placeholder = 'Ã‰crire un messageâ
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={1}
-        className="flex-1 min-w-0 min-h-[44px] max-h-[120px] resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-kraft-900 focus:border-transparent"
+        className="flex-1 min-w-0 min-h-[44px] max-h-[120px] resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-3 md:px-4 py-2.5 text-base md:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-kraft-900 focus:border-transparent touch-manipulation"
         disabled={disabled}
       />
       <button
         type="button"
         onClick={send}
         disabled={disabled || !value.trim()}
-        className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-800 text-white text-sm font-medium hover:bg-stone-700 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+        className="shrink-0 flex items-center justify-center gap-1.5 md:gap-2 min-w-[44px] min-h-[44px] px-3 md:px-4 py-2.5 rounded-xl bg-stone-800 text-white text-sm font-medium hover:bg-stone-700 disabled:opacity-40 disabled:pointer-events-none transition-colors touch-manipulation"
         aria-label="Envoyer"
       >
-        <Send className="h-4 w-4" />
-        Envoyer
+        <Send className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden sm:inline">Envoyer</span>
       </button>
     </div>
   );

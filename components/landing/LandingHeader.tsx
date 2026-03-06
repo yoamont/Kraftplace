@@ -26,7 +26,7 @@ export function LandingHeader() {
           href={user ? '/admin' : '/login'}
           className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
         >
-          Se connecter
+          {user ? 'Tableau de bord' : 'Se connecter'}
         </Link>
         <ButtonShowroom href="/signup?type=showroom">
           <span className="block text-center leading-tight">

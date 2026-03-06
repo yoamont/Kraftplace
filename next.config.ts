@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+/**
+ * Redirection www → non-www (301) : voir middleware.ts
+ * (www.kraftplace.com → https://kraftplace.com, www.kraftplace.fr → https://kraftplace.fr, etc.)
+ */
 const nextConfig: NextConfig = {
   env: {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,

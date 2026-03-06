@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { MessageSquare, Loader2, X, CheckCircle } from 'lucide-react';
+import { MessageSquare, Loader2, X, CheckCircle, ChevronLeft } from 'lucide-react';
 import { useAdminEntity } from '@/app/admin/context/AdminEntityContext';
 import { acceptCandidatureApi, rejectCandidatureApi, cancelCandidatureApi } from '@/lib/api/candidatures';
 import { useChat } from '@/lib/hooks/useChat';
@@ -18,6 +18,8 @@ type Props = {
   myLabel?: string;
   brandId?: number;
   showroomId?: number;
+  /** Sur mobile : retour à la liste des conversations */
+  onBackToConversations?: () => void;
 };
 
 export function ChatView({
@@ -29,6 +31,7 @@ export function ChatView({
   myLabel = 'Vous',
   brandId,
   showroomId,
+  onBackToConversations,
 }: Props) {
   const { activeBrand, activeShowroom, refresh: refreshEntity } = useAdminEntity();
   const senderRole: 'brand' | 'boutique' | undefined = entityType === 'brand' ? 'brand' : entityType === 'showroom' ? 'boutique' : undefined;
@@ -148,7 +151,7 @@ export function ChatView({
     return { hasPendingCandidature: pending, pendingCandidatureMessageId: pending && entityType === 'brand' ? msg.id : null };
   }, [entityType, messages]);
 
-  const chatLocked = loading || hasPendingCandidature;
+  const chatLocked = loading || (entityType === 'brand' && hasPendingCandidature);
   const prevPendingRef = useRef(hasPendingCandidature);
   const [showUnlockBanner, setShowUnlockBanner] = useState(false);
 
@@ -172,23 +175,33 @@ export function ChatView({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-screen max-h-screen bg-white overflow-hidden relative">
-      <div className="h-16 shrink-0 border-b flex items-center px-6 bg-white">
+    <div className="flex-1 flex flex-col h-screen max-h-screen bg-white overflow-hidden relative flex min-h-0">
+      <header className="h-14 md:h-16 shrink-0 border-b flex items-center px-3 md:px-6 bg-white gap-2 min-h-[56px]">
+        {onBackToConversations && (
+          <button
+            type="button"
+            onClick={onBackToConversations}
+            className="md:hidden p-2 -ml-1 rounded-lg text-neutral-600 hover:bg-neutral-100 touch-manipulation"
+            aria-label="Retour à la liste des conversations"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+        )}
         {otherUserAvatarUrl?.trim() ? (
           <img
             src={otherUserAvatarUrl.trim()}
             alt=""
-            className="w-10 h-10 rounded-full object-cover border border-neutral-200 shrink-0"
+            className="w-9 h-9 md:w-10 md:h-10 rounded-full object-cover border border-neutral-200 shrink-0"
           />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
-            <MessageSquare className="h-5 w-5 text-neutral-500" />
+          <span className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-neutral-200 flex items-center justify-center shrink-0">
+            <MessageSquare className="h-4 w-4 md:h-5 md:w-5 text-neutral-500" />
           </span>
         )}
-        <p className="ml-3 font-semibold text-neutral-900 truncate">{otherUserName}</p>
-      </div>
+        <p className="ml-2 md:ml-3 font-semibold text-neutral-900 truncate flex-1 min-w-0">{otherUserName}</p>
+      </header>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6 bg-white min-h-0">
         {error && (
           <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800 flex items-center justify-between gap-2">
             <span>{error}</span>
@@ -238,8 +251,8 @@ export function ChatView({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="shrink-0 border-t bg-neutral-50">
-        <div className="p-4 pt-0 w-full">
+      <div className="shrink-0 border-t bg-neutral-50 pb-4 md:pb-0">
+        <div className="p-3 md:p-4 pt-0 w-full max-w-full">
           {showUnlockBanner && entityType === 'brand' && (
             <div className="mb-3 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900 shadow-sm">
               <p className="font-semibold flex items-center gap-2">
@@ -297,8 +310,8 @@ export function ChatView({
       {negotiateMessageId && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40" aria-hidden onClick={() => setNegotiateMessageId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 pointer-events-auto" role="dialog" aria-modal="true" aria-labelledby="negotiate-title">
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 pointer-events-none">
+            <div className="bg-white rounded-t-2xl md:rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 pb-[env(safe-area-inset-bottom)] md:pb-4 pointer-events-auto" role="dialog" aria-modal="true" aria-labelledby="negotiate-title">
               <div className="flex items-center justify-between mb-4">
                 <h2 id="negotiate-title" className="text-lg font-semibold text-neutral-900">Proposer une contre-offre</h2>
                 <button type="button" onClick={() => setNegotiateMessageId(null)} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100" aria-label="Fermer">

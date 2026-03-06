@@ -23,6 +23,15 @@ export default function MessagesPage() {
   const conversationIdParam = searchParams.get('conversationId');
   const [selectedId, setSelectedId] = useState<string | null>(conversationIdParam);
 
+  const selectConversation = (id: string) => {
+    setSelectedId(id);
+    router.replace(`/messages?conversationId=${id}`, { scroll: false });
+  };
+  const backToList = () => {
+    setSelectedId(null);
+    router.replace('/messages', { scroll: false });
+  };
+
   useEffect(() => {
     if (conversationIdParam) {
       setSelectedId(conversationIdParam);
@@ -60,13 +69,17 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-screen w-full bg-white overflow-hidden">
-      <div className="w-1/3 lg:w-1/4 border-r border-neutral-200 h-full flex flex-col bg-neutral-50/50">
-        <div className="shrink-0 p-3 border-b border-neutral-200 bg-white">
+      {/* Colonne liste : sur mobile, masquée quand une conversation est ouverte */}
+      <div
+        className={`w-full md:w-1/3 lg:w-1/4 border-r border-neutral-200 h-full flex flex-col bg-neutral-50/50 ${selectedId ? 'hidden md:flex' : ''}`}
+        aria-hidden={!!selectedId}
+      >
+        <div className="shrink-0 p-3 md:p-3 border-b border-neutral-200 bg-white">
           <Link
             href="/admin"
-            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 mb-2"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 mb-2 min-h-[44px] items-center touch-manipulation"
           >
-            <ArrowLeft className="h-4 w-4" /> Retour
+            <ArrowLeft className="h-4 w-4 shrink-0" /> Retour
           </Link>
           <h1 className="text-lg font-semibold text-neutral-900">Messagerie</h1>
           <p className="text-xs text-neutral-500 mt-0.5">
@@ -84,7 +97,7 @@ export default function MessagesPage() {
           <ConversationList
             conversations={conversations}
             activeId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selectConversation}
             onRefresh={refresh}
             loading={loading}
             entityType={entityType}
@@ -92,7 +105,11 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col h-full relative min-w-0">
+      {/* Sur mobile : liste masquée quand une conversation est ouverte */}
+      <div
+        className={`flex-1 flex flex-col h-full relative min-w-0 ${!selectedId ? 'hidden md:flex' : ''}`}
+        aria-hidden={!selectedId}
+      >
         <ChatView
           key={selectedId ?? 'none'}
           conversationId={selectedId}
@@ -103,6 +120,7 @@ export default function MessagesPage() {
           myLabel={myLabel}
           brandId={selected?.brand_id}
           showroomId={selected?.showroom_id}
+          onBackToConversations={backToList}
         />
       </div>
     </div>

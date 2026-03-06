@@ -37,7 +37,7 @@ export function EntitySelector() {
   };
 
   if (loading) {
-    return <div className="h-10 w-full max-w-[200px] rounded-lg bg-kraft-100 animate-pulse" />;
+    return <div className="h-10 w-full max-w-full md:max-w-[200px] rounded-lg bg-kraft-100 animate-pulse" />;
   }
 
   if (brands.length === 0 && showrooms.length === 0) {
@@ -49,7 +49,7 @@ export function EntitySelector() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-kraft-300 bg-kraft-50 hover:bg-kraft-100 text-left text-sm font-semibold text-kraft-black"
+        className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg border-2 border-kraft-300 bg-kraft-50 hover:bg-kraft-100 text-left text-sm font-semibold text-kraft-black touch-manipulation"
         aria-expanded={open}
       >
         {entityType === 'brand' && activeBrand?.avatar_url?.trim() ? (
@@ -74,7 +74,7 @@ export function EntitySelector() {
                   key={b.id}
                   type="button"
                   onClick={() => handleSelect('brand', b.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left ${entityType === 'brand' && entityId === b.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-3 min-h-[44px] rounded-md text-sm text-left touch-manipulation ${entityType === 'brand' && entityId === b.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
                 >
                   {b.avatar_url?.trim() ? (
                     <img src={b.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />
@@ -94,7 +94,7 @@ export function EntitySelector() {
                   key={s.id}
                   type="button"
                   onClick={() => handleSelect('showroom', s.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left ${entityType === 'showroom' && entityId === s.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-3 min-h-[44px] rounded-md text-sm text-left touch-manipulation ${entityType === 'showroom' && entityId === s.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
                 >
                   {s.avatar_url?.trim() ? (
                     <img src={s.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />

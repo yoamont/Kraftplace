@@ -47,10 +47,15 @@ export default function MarqueCollectionPage() {
   const brandId = typeof params.brandId === 'string' ? params.brandId : params.brandId?.[0];
   const id = brandId ? parseInt(brandId, 10) : NaN;
 
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: u } }) => setUser(u ? { id: u.id } : null));
+  }, []);
 
   useEffect(() => {
     if (!brandId || Number.isNaN(id)) {
@@ -98,8 +103,8 @@ export default function MarqueCollectionPage() {
           <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Kraftplace
           </Link>
-          <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-bold bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
-            Connexion
+          <Link href={user ? '/admin' : '/login'} className="px-4 py-2 rounded-lg text-sm font-bold bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
+            {user ? 'Tableau de bord' : 'Connexion'}
           </Link>
         </div>
       </header>

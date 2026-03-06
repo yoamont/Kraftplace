@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -26,20 +27,23 @@ export function ContactBrandButton({ brandId, className, children }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) {
+        setLoading(false);
         router.push(`/login?redirect=${encodeURIComponent(`/marque/${brandId}`)}`);
         return;
       }
 
-      const { data: showroom } = await supabase
+      const { data: showrooms } = await supabase
         .from('showrooms')
         .select('id')
         .eq('owner_id', user.id)
-        .maybeSingle();
+        .limit(1);
 
+      const showroom = Array.isArray(showrooms) ? showrooms[0] : showrooms;
       if (!showroom) {
-        setError('Connectez-vous en tant que boutique pour contacter ce créateur.');
+        setError('Aucune boutique n’est liée à votre compte. Complétez votre profil depuis le tableau de bord.');
         setLoading(false);
         return;
       }
@@ -55,7 +59,7 @@ export function ContactBrandButton({ brandId, className, children }: Props) {
 
       const conv = existing as { id: string } | null;
       if (conv?.id) {
-        router.push(`/messages?conversationId=${conv.id}`);
+        router.push(`/messages?conversationId=${conv.id}&showroom=${showroomId}`);
         return;
       }
 
@@ -71,7 +75,7 @@ export function ContactBrandButton({ brandId, className, children }: Props) {
         return;
       }
 
-      router.push(`/messages?conversationId=${(inserted as { id: string }).id}`);
+      router.push(`/messages?conversationId=${(inserted as { id: string }).id}&showroom=${showroomId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur');
       setLoading(false);
@@ -96,7 +100,14 @@ export function ContactBrandButton({ brandId, className, children }: Props) {
         )}
         {children ?? 'Contacter le créateur'}
       </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600">
+          {error}
+          <Link href="/admin" className="block mt-1 font-medium text-neutral-900 hover:underline">
+            Aller au tableau de bord →
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

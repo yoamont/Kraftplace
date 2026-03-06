@@ -48,7 +48,7 @@ export default function HomePage() {
           href={user ? '/admin' : '/login'}
           className="text-xs font-medium text-[#1A1A1A]/90 hover:text-[#1A1A1A] transition-colors"
         >
-          Connexion
+          {user ? 'Tableau de bord' : 'Connexion'}
         </Link>
       </header>
 
@@ -61,23 +61,29 @@ export default function HomePage() {
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch justify-center gap-6 sm:gap-12 max-w-xl w-full">
             <Link
               href={user ? '/admin' : '/signup?type=brand'}
-              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-transparent py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-[#FBFBFD] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-neutral-100/80 py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-neutral-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
             >
               <Sparkles className="h-10 w-10 sm:h-11 sm:w-11 text-neutral-700 mb-3" strokeWidth={1} aria-hidden />
               <span className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Marque</span>
               <p className="mt-1.5 text-[12px] font-normal text-neutral-400 leading-snug max-w-[180px]">
                 Trouvez des boutiques qui valorisent votre artisanat.
               </p>
+              <span className="mt-4 inline-block rounded-full bg-neutral-900 text-white text-sm font-medium px-4 py-2">
+                Créer mon compte
+              </span>
             </Link>
             <Link
               href={user ? '/admin' : '/signup?type=showroom'}
-              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-transparent py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-[#FBFBFD] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+              className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-neutral-100/80 py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-neutral-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
             >
               <Store className="h-10 w-10 sm:h-11 sm:w-11 text-neutral-700 mb-3" strokeWidth={1} aria-hidden />
               <span className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Boutique</span>
               <p className="mt-1.5 text-[12px] font-normal text-neutral-400 leading-snug max-w-[180px]">
                 Sourcez des créateurs qui enrichissent votre univers éthique.
               </p>
+              <span className="mt-4 inline-block rounded-full bg-neutral-900 text-white text-sm font-medium px-4 py-2">
+                Créer mon compte
+              </span>
             </Link>
           </div>
         </section>

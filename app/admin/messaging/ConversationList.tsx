@@ -101,10 +101,10 @@ export function ConversationList({
               tabIndex={0}
               onClick={() => onSelect(conv.id)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv.id); } }}
-              className={`w-full flex items-center gap-3 p-3 text-left transition-colors cursor-pointer ${
+              className={`w-full flex items-center gap-3 p-3 text-left transition-colors cursor-pointer min-h-[56px] touch-manipulation ${
                 isActive
                   ? 'bg-kraft-200 text-kraft-900'
-                  : 'hover:bg-neutral-50 text-neutral-900'
+                  : 'hover:bg-neutral-50 active:bg-neutral-100 text-neutral-900'
               }`}
             >
               <span className="relative shrink-0">
