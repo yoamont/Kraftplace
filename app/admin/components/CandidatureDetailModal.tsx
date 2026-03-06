@@ -315,11 +315,11 @@ export function CandidatureDetailModal({
                     )}
                     {conversationId && (viewerSide === 'showroom' ? activeShowroom : activeBrand) && (
                       <Link
-                        href={viewerSide === 'showroom' && activeShowroom
-                          ? `/messages?conversationId=${conversationId}&showroom=${activeShowroom.id}`
-                          : viewerSide === 'brand' && activeBrand
-                            ? `/messages?conversationId=${conversationId}&brand=${activeBrand.id}`
-                            : '#'}
+                        href={
+                          viewerSide === 'showroom'
+                            ? `/messages?conversationId=${conversationId}&showroom=${activeShowroom!.id}`
+                            : `/messages?conversationId=${conversationId}&brand=${activeBrand!.id}`
+                        }
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
                       >
                         <MessageSquare className="h-4 w-4" /> Ouvrir la messagerie

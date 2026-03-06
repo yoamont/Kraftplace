@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/** Redirection 301 www → non-www pour tous les domaines (ex. kraftplace.com, kraftplace.fr). */
+/** Redirection 301 www → non-www pour tout domaine (ex. www.example.com → https://example.com). */
 export function middleware(request: NextRequest) {
   const host = (request.headers.get('host') ?? request.nextUrl.hostname).toLowerCase();
   if (host.startsWith('www.')) {
