@@ -41,12 +41,6 @@ const nextConfig: NextConfig = {
     ];
   },
   turbopack: {},
-  webpack: (config, { isServer }) => {
-    if (!isServer && config.output) {
-      config.output.trustedTypes = false;
-    }
-    return config;
-  },
 };
 
 export default nextConfig;

@@ -9,10 +9,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
  * Vérifie si une candidature acceptée existe déjà pour (brand_id, showroom_id).
  * Source de vérité : messages (CANDIDATURE_SENT puis CANDIDATURE_ACCEPTED dans la conversation).
  */
-async function hasAcceptedCandidature(
-  supabase: ReturnType<typeof createClient>,
-  conversationId: string
-): Promise<boolean> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function hasAcceptedCandidature(supabase: any, conversationId: string): Promise<boolean> {
   const { data: messages } = await supabase
     .from('messages')
     .select('id, type, created_at')
@@ -20,11 +18,11 @@ async function hasAcceptedCandidature(
     .in('type', ['CANDIDATURE_SENT', 'CANDIDATURE_ACCEPTED'])
     .order('created_at', { ascending: true });
 
-  if (!messages?.length) return false;
-  const sentIdx = messages.findIndex((m) => m.type === 'CANDIDATURE_SENT');
+  const list = (messages ?? []) as { id: string; type: string; created_at: string }[];
+  if (!list.length) return false;
+  const sentIdx = list.findIndex((m) => m.type === 'CANDIDATURE_SENT');
   if (sentIdx === -1) return false;
-  const acceptedAfter = messages.slice(sentIdx + 1).some((m) => m.type === 'CANDIDATURE_ACCEPTED');
-  return acceptedAfter;
+  return list.slice(sentIdx + 1).some((m) => m.type === 'CANDIDATURE_ACCEPTED');
 }
 
 /**

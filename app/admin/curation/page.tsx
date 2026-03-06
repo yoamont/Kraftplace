@@ -403,7 +403,7 @@ export default function CurationPage() {
           candidature={detailCandidature}
           onClose={() => setDetailCandidature(null)}
           viewerSide="showroom"
-          onCandidatureUpdated={(updated) => setDetailCandidature(updated)}
+          onCandidatureUpdated={(updated) => setDetailCandidature((prev) => (prev ? { ...prev, ...updated, brand: prev.brand, option: prev.option } : null))}
         />
       )}
 

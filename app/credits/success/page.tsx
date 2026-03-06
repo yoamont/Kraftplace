@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/lib/supabase';
 
-export default function CreditsSuccessPage() {
+function CreditsSuccessContent() {
   const searchParams = useSearchParams();
   const fired = useRef(false);
   const [confirmStatus, setConfirmStatus] = useState<'pending' | 'ok' | 'already' | 'error'>('pending');
@@ -102,5 +102,19 @@ export default function CreditsSuccessPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function CreditsSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center bg-kraft-50 px-4">
+        <div className="text-center max-w-md">
+          <p className="text-kraft-700">Chargement…</p>
+        </div>
+      </div>
+    }>
+      <CreditsSuccessContent />
+    </Suspense>
   );
 }

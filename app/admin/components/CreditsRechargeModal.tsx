@@ -16,7 +16,7 @@ type Props = {
   introMessage?: string;
 };
 
-export function CreditsRechargeModal({ onClose, title = 'Recharger mes crédits' }: Props) {
+export function CreditsRechargeModal({ onClose, title = 'Recharger mes crédits', introMessage }: Props) {
   const { activeBrand } = useAdminEntity();
   const [loading, setLoading] = useState<3 | 10 | null>(null);
 

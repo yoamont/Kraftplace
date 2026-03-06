@@ -2,10 +2,14 @@
   "name": "showroom-app",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
+    "build:turbo": "next build",
     "build:webpack": "next build --webpack",
     "start": "next start",
     "lint": "eslint"

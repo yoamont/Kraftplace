@@ -170,7 +170,7 @@ export function MessageEntry({
                 </div>
               </div>
             )}
-            {(meta.rent != null || meta.rent === 0) && (
+            {(meta.rent != null) && (
               <div className="flex items-start gap-2.5">
                 <Home className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
                 <div className="min-w-0">
@@ -199,12 +199,12 @@ export function MessageEntry({
                 </div>
               </div>
             )}
-            {meta.option_description && (
+            {meta.option_description != null && String(meta.option_description).trim() !== '' ? (
               <p className="text-sm text-neutral-600 pt-0.5">{String(meta.option_description)}</p>
-            )}
-            {meta.negotiation_message && (
+            ) : null}
+            {meta.negotiation_message != null && String(meta.negotiation_message).trim() !== '' ? (
               <p className="text-sm text-neutral-600 italic pt-0.5">{String(meta.negotiation_message)}</p>
-            )}
+            ) : null}
           </div>
           {showActions && isPending && (onAccept || onDecline || onNegotiate) && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -296,7 +296,7 @@ export function MessageEntry({
                   </div>
                 </div>
               )}
-              {(meta.rent != null || meta.rent === 0) && (
+              {(meta.rent != null) && (
                 <div className="flex items-start gap-2.5">
                   <Home className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" strokeWidth={1.5} />
                   <div className="min-w-0">
@@ -325,7 +325,7 @@ export function MessageEntry({
                   </div>
                 </div>
               )}
-              {meta.option_description && <p className="text-sm text-neutral-600 pt-0.5">{String(meta.option_description)}</p>}
+              {meta.option_description != null && String(meta.option_description).trim() !== '' ? <p className="text-sm text-neutral-600 pt-0.5">{String(meta.option_description)}</p> : null}
             </div>
             {dealPending && onAcceptDeal && onDeclineDeal && (
               <div className="mt-4 flex flex-wrap gap-2">

@@ -112,6 +112,9 @@ export type BoutiqueCardProps = {
   /** Bloc d’action contextuel : bouton "Candidater (1 crédit)" côté marque, "Modifier mon profil" côté boutique, etc. */
   children: React.ReactNode;
   showReportButton?: boolean;
+  urgencyDays?: number | null;
+  matchingBadgeSlugs?: string[];
+  selectedBadgeSlugs?: string[];
 };
 
 /**
@@ -241,7 +244,9 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
                 {o.rent != null && o.rent > 0 && <span className="font-medium text-neutral-800">{o.rent}€{rentPeriodLabel(o.rent_period)}</span>}
                 {o.commission_percent != null && <span className="font-medium text-neutral-800">{o.commission_percent}%</span>}
                 {o.description?.trim() && (
-                  <Info className="h-3 w-3 text-neutral-400 cursor-help shrink-0" title={o.description} aria-label="Détails" strokeWidth={1.5} />
+                  <span className="inline-flex shrink-0" title={o.description} aria-label="Détails">
+                    <Info className="h-3 w-3 text-neutral-400 cursor-help" strokeWidth={1.5} />
+                  </span>
                 )}
               </span>
             ))}
