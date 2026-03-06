@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import {
@@ -12,6 +13,7 @@ import {
   XCircle,
   MessageSquare,
   X,
+  FileText,
 } from 'lucide-react';
 import type { Brand, Candidature, ShowroomCommissionOption, Message } from '@/lib/supabase';
 import { getOrCreateConversationId } from '@/lib/conversations';
@@ -43,6 +45,7 @@ export default function CurationPage() {
   const [negotiateMessage, setNegotiateMessage] = useState('');
   const [detailCandidature, setDetailCandidature] = useState<CandidatureWithDetails | null>(null);
   const [lastMessageByCandidatureId, setLastMessageByCandidatureId] = useState<Record<string, Message>>({});
+  const [conversationIdByPair, setConversationIdByPair] = useState<Record<string, string>>({});
 
   const loadCandidatures = useCallback(async () => {
     if (entityType !== 'showroom' || !activeShowroom) return;
@@ -96,6 +99,7 @@ export default function CurationPage() {
         const id = convIds[i];
         if (id) pairToConvId.set(key, id);
       });
+      setConversationIdByPair(Object.fromEntries(pairToConvId));
       let lastByCandidature: Record<string, Message> = {};
       if (resolvedConvIds.length > 0) {
         const { data: msgRows } = await supabase
@@ -302,10 +306,15 @@ export default function CurationPage() {
                   </button>
                 </div>
                 <ul className="divide-y divide-neutral-100">
-                  {brandCandidatures.map((c) => (
+                  {brandCandidatures.map((c) => {
+                    const pairKey = `${c.brand_id}-${c.showroom_id}`;
+                    const convId = conversationIdByPair[pairKey];
+                    const isPending = c.status === 'pending';
+                    return (
                     <li key={c.id} className="p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
+                      <div className="space-y-3">
+                        {/* Résumé */}
+                        <div className="min-w-0">
                           <p className="text-sm text-neutral-700">
                             {c.showroom_commission_option_id != null ? (
                               <>Option : {candidatureOptionSummary(c.option ?? null)}</>
@@ -321,7 +330,7 @@ export default function CurationPage() {
                           {c.created_at && (
                             <p className="mt-1 text-xs text-neutral-500">Envoyée le {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
-                          {c.status === 'pending' && (c.partnership_start_at || c.partnership_end_at) && (
+                          {isPending && (c.partnership_start_at || c.partnership_end_at) && (
                             <p className="mt-1 text-xs text-amber-700">
                               Partenariat {c.partnership_start_at && c.partnership_end_at
                                 ? `du ${new Date(c.partnership_start_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} au ${new Date(c.partnership_end_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
@@ -330,7 +339,7 @@ export default function CurationPage() {
                                   : `à partir du ${new Date(c.partnership_start_at!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
                             </p>
                           )}
-                          {c.status === 'pending' && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
+                          {isPending && !c.partnership_start_at && !c.partnership_end_at && c.expires_at && (
                             <p className="mt-1 text-xs text-amber-700">Valable jusqu'au {new Date(c.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                           )}
                           {c.status === 'cancelled' && c.expires_at && (
@@ -343,7 +352,8 @@ export default function CurationPage() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        {/* Actions rapides */}
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-medium ${
                             c.status === 'pending' ? 'bg-amber-100 text-amber-800' :
                             c.status === 'accepted' ? 'bg-green-100 text-green-800' :
@@ -352,20 +362,13 @@ export default function CurationPage() {
                           }`}>
                             {c.status === 'pending' ? 'En attente' : c.status === 'accepted' ? 'Acceptée' : c.status === 'rejected' ? 'Refusée' : c.status === 'cancelled' ? 'Annulée' : c.status}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => setDetailCandidature(c)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50"
-                          >
-                            <MessageSquare className="h-3.5 w-3.5" /> Voir le détail
-                          </button>
-                          {c.status === 'pending' && (
+                          {isPending && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => acceptCandidature(c.id)}
                                 disabled={submitting}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-60"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-60 transition-colors"
                               >
                                 <CheckCircle className="h-3.5 w-3.5" /> Accepter
                               </button>
@@ -373,7 +376,7 @@ export default function CurationPage() {
                                 type="button"
                                 onClick={() => refuseCandidature(c.id)}
                                 disabled={submitting}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-700 text-xs font-medium hover:bg-red-50 disabled:opacity-60"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-red-700 text-xs font-medium hover:bg-red-50 disabled:opacity-60 transition-colors"
                               >
                                 <XCircle className="h-3.5 w-3.5" /> Refuser
                               </button>
@@ -381,16 +384,32 @@ export default function CurationPage() {
                                 type="button"
                                 onClick={() => openNegotiateModal(c)}
                                 disabled={submitting}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50 disabled:opacity-60"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-amber-200 text-amber-800 text-xs font-medium hover:bg-amber-50 disabled:opacity-60 transition-colors"
                               >
                                 <MessageSquare className="h-3.5 w-3.5" /> Négocier
                               </button>
                             </>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => setDetailCandidature(c)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50 transition-colors"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> Voir le détail
+                          </button>
+                          {convId && activeShowroom && (
+                            <Link
+                              href={`/messages?conversationId=${convId}&showroom=${activeShowroom.id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition-colors"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" /> Contacter la marque
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </section>
             );

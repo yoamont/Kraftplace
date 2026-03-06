@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { X, Loader2, Sparkles, Store, Send, Pencil, CheckCircle, XCircle, Handshake } from 'lucide-react';
+import { X, Loader2, Sparkles, Store, Send, Pencil, CheckCircle, XCircle, Handshake, MessageSquare } from 'lucide-react';
 import type { Candidature, ShowroomCommissionOption } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { MessageList } from './MessageList';
@@ -39,7 +40,7 @@ export function CandidatureDetailModal({
   /** Ouverture du formulaire de modification d'offre (marque, statut pending) ; reçoit la candidature à jour */
   onEditRequest?: (c: CandidatureDetail) => void;
 }) {
-  const { userId } = useAdminEntity();
+  const { userId, activeShowroom, activeBrand } = useAdminEntity();
   const [brandRow, setBrandRow] = useState<BrandRow | null>(null);
   const [showroomRow, setShowroomRow] = useState<ShowroomRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -270,6 +271,14 @@ export function CandidatureDetailModal({
                         {status === 'rejected' ? 'Offre refusée' : 'Demande annulée'}
                       </p>
                     )}
+                    {conversationId && activeBrand && (
+                      <Link
+                        href={`/messages?conversationId=${conversationId}&brand=${activeBrand.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
+                      >
+                        <MessageSquare className="h-4 w-4" /> Ouvrir la messagerie
+                      </Link>
+                    )}
                   </>
                 )}
                 {viewerSide === 'showroom' && (
@@ -299,11 +308,22 @@ export function CandidatureDetailModal({
                         <Handshake className="h-4 w-4 text-emerald-600" /> Partenariat actif
                       </p>
                     )}
-                    {status === 'rejected' && (
-                      <p className="text-sm text-neutral-500 py-1">Offre refusée</p>
+                    {(status === 'rejected' || status === 'cancelled') && (
+                      <p className="text-sm text-neutral-500 py-1">
+                        {status === 'rejected' ? 'Offre refusée' : 'Demande annulée'}
+                      </p>
                     )}
-                    {status === 'cancelled' && (
-                      <p className="text-sm text-neutral-500 py-1">Demande annulée</p>
+                    {conversationId && (viewerSide === 'showroom' ? activeShowroom : activeBrand) && (
+                      <Link
+                        href={viewerSide === 'showroom' && activeShowroom
+                          ? `/messages?conversationId=${conversationId}&showroom=${activeShowroom.id}`
+                          : viewerSide === 'brand' && activeBrand
+                            ? `/messages?conversationId=${conversationId}&brand=${activeBrand.id}`
+                            : '#'}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
+                      >
+                        <MessageSquare className="h-4 w-4" /> Ouvrir la messagerie
+                      </Link>
                     )}
                   </>
                 )}

@@ -40,7 +40,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin/showroom-config', label: 'Boutique', icon: Settings },
     { href: '/admin/listings', label: 'Annonces', icon: FileText },
     { href: '/admin/browse-brands', label: 'Marques', icon: Search },
-    { href: '/admin/curation', label: 'Partenariats', icon: LayoutGrid },
+    { href: '/admin/placements', label: 'Partenariats', icon: LayoutGrid },
     { href: '/messages', label: 'Messagerie', icon: MessageSquare },
   ];
   const navItems = entityType === 'brand' ? brandNav : entityType === 'showroom' ? showroomNav : [{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard }];

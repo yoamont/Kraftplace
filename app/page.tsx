@@ -58,7 +58,28 @@ export default function HomePage() {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-neutral-900 tracking-tight max-w-2xl mx-auto leading-[1.2] text-center">
             <span className="font-bold">Kraftplace.</span> Le trait d&apos;union entre <span className="font-bold text-neutral-900">lieux engagés</span> et <span className="font-bold text-neutral-900">marques éthiques</span>.
           </h1>
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-stretch justify-center gap-6 sm:gap-12 max-w-xl w-full">
+          {/* Bandeau valeurs : Artisanal, Vegan, Zéro Déchet, Made in Euro... */}
+          {badges.length > 0 && (
+            <div className="mt-6 w-full max-w-2xl mx-auto overflow-hidden">
+              <div className="flex w-max mx-auto animate-scroll-badges items-center gap-3 px-4">
+                {Array.from({ length: BADGE_DUPLICATES }).map((_, block) => (
+                  <div key={block} className="flex items-center gap-3 shrink-0">
+                    {badges.map((badge) => (
+                      <span
+                        key={`${block}-${badge.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 border border-black/[0.06] shrink-0 shadow-sm"
+                        aria-hidden
+                      >
+                        <BadgeIcon badge={badge} className="w-3.5 h-3 shrink-0 inline-block" />
+                        <span>{badge.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch justify-center gap-6 sm:gap-12 max-w-xl w-full">
             <Link
               href={user ? '/admin' : '/signup?type=brand'}
               className="flex flex-col items-center justify-center text-center rounded-2xl border border-black/[0.06] bg-neutral-100/80 py-6 px-6 sm:py-8 sm:px-8 transition-all duration-200 hover:border-neutral-900 hover:bg-neutral-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
@@ -88,7 +109,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Footer-Nav : 3 mots-clés avec tooltips */}
+        {/* Footer-Nav : Postulez · Échangez · Exposez */}
         <nav className="shrink-0 flex items-center justify-center gap-2 sm:gap-4 px-4 py-3 border-t border-black/[0.06] bg-white/40" aria-label="Comment ça marche">
           {FOOTER_STEPS.map((step, i) => {
             const Icon = step.icon;
@@ -110,28 +131,6 @@ export default function HomePage() {
             );
           })}
         </nav>
-
-        {/* Bandeau badges - très fin et discret en bas */}
-        {badges.length > 0 && (
-          <div className="shrink-0 h-9 border-t border-black/[0.06] bg-white/30 overflow-hidden flex items-center">
-            <div className="flex w-max animate-scroll-badges items-center gap-3 px-4">
-              {Array.from({ length: BADGE_DUPLICATES }).map((_, block) => (
-                <div key={block} className="flex items-center gap-3 shrink-0">
-                  {badges.map((badge) => (
-                    <span
-                      key={`${block}-${badge.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-neutral-600 border border-black/[0.05] shrink-0"
-                      aria-hidden
-                    >
-                      <BadgeIcon badge={badge} className="w-3.5 h-3 shrink-0 inline-block" />
-                      <span>{badge.label}</span>
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

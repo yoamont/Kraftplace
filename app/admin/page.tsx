@@ -147,11 +147,11 @@ export default function AdminDashboardPage() {
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
-            <Link href="/admin/curation" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+            <Link href="/admin/placements" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><LayoutGrid className={iconClass} strokeWidth={1.5} /></div>
               <div className="min-w-0 flex-1">
                 <span className="font-medium text-neutral-900">Partenariats</span>
-                <p className="text-xs font-light text-neutral-500 mt-0.5">Candidatures et messagerie</p>
+                <p className="text-xs font-light text-neutral-500 mt-0.5">Candidatures et sessions par marque</p>
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
