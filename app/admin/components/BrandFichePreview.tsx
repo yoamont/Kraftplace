@@ -28,7 +28,7 @@ export function BrandFichePreview({ brandName, description, avatarUrl, imageUrl,
   };
 
   return (
-    <BrandCard brand={brandPreview} badges={badges}>
+    <BrandCard brand={brandPreview} badges={badges} showReportButton={false}>
       {linkToCollection ? (
         <Link
           href={`/marque/${brandId}`}

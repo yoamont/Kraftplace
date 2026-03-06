@@ -59,11 +59,11 @@ export function ConversationList({
     if (!window.confirm('Annuler votre candidature ? Votre crédit réservé sera libéré.')) return;
     setCancellingId(conv.id);
     try {
+      const { cancelCandidatureApi } = await import('@/lib/api/candidatures');
+      await cancelCandidatureApi(conv.id);
       const { data: existing } = await supabase.from('messages').select('metadata').eq('id', conv.pendingCandidatureMessageId).single();
       const current = ((existing as { metadata?: Record<string, unknown> })?.metadata ?? {}) as Record<string, unknown>;
       await supabase.from('messages').update({ metadata: { ...current, status: 'cancelled', cancelled_at: new Date().toISOString() }, updated_at: new Date().toISOString() }).eq('id', conv.pendingCandidatureMessageId);
-      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
-      await supabase.from('brands').update({ reserved_credits: Math.max(0, reserved - 1) }).eq('id', activeBrand.id);
       refreshEntity();
       onRefresh();
     } finally {

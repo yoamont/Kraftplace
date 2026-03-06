@@ -104,18 +104,46 @@ export default function ListingsPage() {
     }
   };
 
-  const handleToggle = (listing: Listing) => {
+  const ensureSiretValidForPublish = async (): Promise<boolean> => {
+    const siret = activeShowroom?.siret?.trim().replace(/\s/g, '') ?? '';
+    if (siret.length !== 14) {
+      alert('Pour publier une annonce, renseignez un SIRET valide (14 chiffres) dans Paramètres boutique.');
+      return false;
+    }
+    try {
+      const res = await fetch('/api/validate-siret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siret }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !(data as { valid?: boolean }).valid) {
+        alert((data as { error?: string }).error ?? 'SIRET invalide. Vérifiez le numéro dans Paramètres boutique.');
+        return false;
+      }
+      return true;
+    } catch {
+      alert('Vérification SIRET indisponible. Réessayez plus tard.');
+      return false;
+    }
+  };
+
+  const handleToggle = async (listing: Listing) => {
     const nextPublished = listing.status !== 'published';
-    if (nextPublished && publishedListing && publishedListing.id !== listing.id) {
-      setConfirmPublishId(listing.id);
-      return;
+    if (nextPublished) {
+      if (!(await ensureSiretValidForPublish())) return;
+      if (publishedListing && publishedListing.id !== listing.id) {
+        setConfirmPublishId(listing.id);
+        return;
+      }
     }
     setListingStatus(listing.id, nextPublished ? 'published' : 'draft');
   };
 
-  const handleConfirmPublish = () => {
+  const handleConfirmPublish = async () => {
     const id = confirmPublishId;
     if (!id) return;
+    if (!(await ensureSiretValidForPublish())) return;
     setListingStatus(id, 'published', true);
   };
 

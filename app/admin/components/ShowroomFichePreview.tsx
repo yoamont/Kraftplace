@@ -139,7 +139,7 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
     }));
 
   return (
-    <BoutiqueCard showroom={showroomPreview} commissionOptions={optionsPreview} badges={badges}>
+    <BoutiqueCard showroom={showroomPreview} commissionOptions={optionsPreview} badges={badges} showReportButton={!ownerView}>
       {ownerView ? (
         <Link
           href="/admin/showroom-config"

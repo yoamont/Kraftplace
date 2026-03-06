@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Package } from 'lucide-react';
+import { ReportButton } from '@/app/admin/components/ReportButton';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 
@@ -13,13 +14,14 @@ export type BrandCardProps = {
   badges?: Badge[];
   /** Bloc d’action contextuel : "Voir les produits", "Voir la candidature", "Contacter", etc. */
   children: React.ReactNode;
+  showReportButton?: boolean;
 };
 
 /**
  * Fiche marque unique - même rendu sur l’aperçu du profil marque et sur "Parcourir les marques" (boutique).
  * Les mêmes champs Supabase sont affichés (nom, description, photos). Optionnellement une bande de produits.
  */
-export function BrandCard({ brand, products = [], badges = [], children }: BrandCardProps) {
+export function BrandCard({ brand, products = [], badges = [], children, showReportButton = true }: BrandCardProps) {
   return (
     <article className="rounded-[12px] bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200 flex flex-col">
       <div className="aspect-[3/1] bg-neutral-50/80 relative">
@@ -93,6 +95,11 @@ export function BrandCard({ brand, products = [], badges = [], children }: Brand
         )}
         <div className="mt-5">
           {children}
+          {showReportButton && (
+            <div className="mt-2 pt-2 border-t border-black/[0.06]">
+              <ReportButton entityType="brand" entityId={brand.id} entityName={brand.brand_name ?? undefined} />
+            </div>
+          )}
         </div>
       </div>
     </article>

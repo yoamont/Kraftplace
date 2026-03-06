@@ -2,12 +2,15 @@
 
 import type { UnifiedMessage } from '@/lib/supabase';
 import { FileText, ExternalLink, CheckCircle, XCircle, MessageCircle, Calendar, Percent, Home, MapPin } from 'lucide-react';
+import { maskEmailAndPhone } from '@/lib/maskContact';
 
 type Props = {
   message: UnifiedMessage;
   isMe: boolean;
   myLabel: string;
   otherUserName: string;
+  /** Candidature acceptée : afficher emails/téléphones, sinon masqués */
+  conversationAccepted?: boolean;
   /** Nom de la marque (pour afficher selon sender_role) */
   brandDisplayName?: string;
   /** Nom de la boutique (pour afficher selon sender_role) */
@@ -74,6 +77,7 @@ export function MessageEntry({
   isMe,
   myLabel,
   otherUserName,
+  conversationAccepted = false,
   brandDisplayName,
   showroomDisplayName,
   viewerRole,
@@ -86,6 +90,7 @@ export function MessageEntry({
 }: Props) {
   const label = senderLabel(message, isMe, myLabel, otherUserName, brandDisplayName, showroomDisplayName);
   const badge = senderBadge(message);
+  const displayContent = conversationAccepted ? (message.content ?? '') : maskEmailAndPhone(message.content ?? '');
   const timeStr = message.created_at
     ? new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false })
         .format(new Date(message.created_at))
@@ -244,7 +249,7 @@ export function MessageEntry({
                 isMe ? 'bg-stone-800 text-white rounded-br-none' : 'bg-neutral-100 text-neutral-900 rounded-bl-none'
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content ?? ''}</p>
+              <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
             </div>
             <span className={`text-[10px] text-neutral-400 mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>{timeStr}</span>
           </div>
@@ -372,7 +377,7 @@ export function MessageEntry({
               <FileText className="h-4 w-4 text-neutral-500" />
               Contrat
             </div>
-            <p className="text-sm text-neutral-600 mt-1">{message.content ?? 'Contrat de partenariat'}</p>
+            <p className="text-sm text-neutral-600 mt-1">{displayContent || 'Contrat de partenariat'}</p>
             {documentUrl && (
               <a
                 href={documentUrl}
@@ -466,7 +471,7 @@ export function MessageEntry({
       return (
         <div className="flex w-full justify-center my-2">
           <span className="bg-neutral-100 text-neutral-500 text-xs py-1 px-3 rounded-full">
-            {message.content ?? message.type}
+            {displayContent || message.type}
           </span>
         </div>
       );

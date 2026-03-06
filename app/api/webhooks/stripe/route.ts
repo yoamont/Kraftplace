@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { addCreditsForSession, getCreditsFromPack } from '@/lib/stripe-credits';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -31,17 +32,17 @@ export async function POST(request: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
-  const brandId = session.client_reference_id ?? session.metadata?.brand_id;
+  const brandIdRaw = session.client_reference_id ?? session.metadata?.brand_id;
   const pack = session.metadata?.pack;
 
-  if (!brandId || !pack) {
+  if (!brandIdRaw || !pack) {
     return NextResponse.json(
       { error: 'client_reference_id (ID marque) ou metadata.pack manquant' },
       { status: 400 }
     );
   }
 
-  const creditsToAdd = pack === '10' ? 10 : pack === '3' ? 3 : 0;
+  const creditsToAdd = getCreditsFromPack(pack);
   if (creditsToAdd === 0) {
     return NextResponse.json(
       { error: 'Pack non reconnu (attendu 3 ou 10)' },
@@ -57,37 +58,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const id = parseInt(brandId, 10);
-  if (Number.isNaN(id)) {
+  const brandId = parseInt(String(brandIdRaw), 10);
+  if (Number.isNaN(brandId)) {
     return NextResponse.json({ error: 'brand_id invalide' }, { status: 400 });
   }
 
-  const { data: brand, error: fetchError } = await admin
-    .from('brands')
-    .select('credits')
-    .eq('id', id)
-    .single();
-
-  if (fetchError || !brand) {
-    return NextResponse.json(
-      { error: 'Marque introuvable' },
-      { status: 404 }
-    );
+  const sessionId = session.id ?? event.id;
+  if (!sessionId) {
+    return NextResponse.json({ error: 'session_id manquant' }, { status: 400 });
   }
 
-  const current = typeof brand.credits === 'number' ? brand.credits : 0;
-  const { error: updateError } = await admin
-    .from('brands')
-    .update({ credits: current + creditsToAdd })
-    .eq('id', id);
-
-  if (updateError) {
-    return NextResponse.json(
-      { error: 'Échec mise à jour crédits', details: updateError.message },
-      { status: 500 }
-    );
+  const { added, error: addError } = await addCreditsForSession(admin, sessionId, brandId, creditsToAdd);
+  if (addError) {
+    return NextResponse.json({ error: 'Échec mise à jour crédits', details: addError }, { status: 500 });
   }
-
-  console.log(`Paiement reçu pour la marque ${id} : +${creditsToAdd} crédits`);
-  return NextResponse.json({ received: true, credits_added: creditsToAdd });
+  return NextResponse.json({ received: true, credits_added: added ? creditsToAdd : 0, already_processed: !added });
 }

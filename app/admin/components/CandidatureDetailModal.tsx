@@ -97,22 +97,17 @@ export function CandidatureDetailModal({
   const c = refreshedCandidature ?? candidature;
   const status = c.status ?? 'pending';
 
-  async function releaseReservedCredit(brandId: number) {
-    const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
-    const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-    await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
-  }
-
   const handleAccept = async () => {
     if (viewerSide !== 'showroom' || status !== 'pending') return;
     setActionLoading(true);
     try {
+      const cid = conversationId ?? (await getOrCreateConversationId(c.brand_id, c.showroom_id));
+      if (cid) {
+        const { acceptCandidatureApi } = await import('@/lib/api/candidatures');
+        await acceptCandidatureApi(cid);
+      }
       const { error } = await supabase.from('candidatures').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
-        const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', c.brand_id).single();
-        const cr = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
-        const res = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-        await supabase.from('brands').update({ credits: Math.max(0, cr - 1), reserved_credits: Math.max(0, res - 1) }).eq('id', c.brand_id);
         await fetchCandidature();
         onCandidatureUpdated?.({ ...c, status: 'accepted' });
         setMessageListKey((k) => k + 1);
@@ -127,9 +122,13 @@ export function CandidatureDetailModal({
     if (!confirm('Refuser cette offre ?')) return;
     setActionLoading(true);
     try {
+      const cid = conversationId ?? (await getOrCreateConversationId(c.brand_id, c.showroom_id));
+      if (cid) {
+        const { rejectCandidatureApi } = await import('@/lib/api/candidatures');
+        await rejectCandidatureApi(cid);
+      }
       const { error } = await supabase.from('candidatures').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
-        await releaseReservedCredit(c.brand_id);
         await fetchCandidature();
         onCandidatureUpdated?.({ ...c, status: 'rejected' });
         setMessageListKey((k) => k + 1);
@@ -144,9 +143,13 @@ export function CandidatureDetailModal({
     if (!confirm('Annuler la demande ?')) return;
     setActionLoading(true);
     try {
+      const cid = conversationId ?? (await getOrCreateConversationId(c.brand_id, c.showroom_id));
+      if (cid) {
+        const { cancelCandidatureApi } = await import('@/lib/api/candidatures');
+        await cancelCandidatureApi(cid);
+      }
       const { error } = await supabase.from('candidatures').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', c.id);
       if (!error) {
-        await releaseReservedCredit(c.brand_id);
         await fetchCandidature();
         onCandidatureUpdated?.({ ...c, status: 'cancelled' });
         setMessageListKey((k) => k + 1);

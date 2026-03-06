@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Check, Trash2, Upload, ImageIcon } from 'lucide-rea
 import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
 import { ShowroomFichePreview } from '../components/ShowroomFichePreview';
 import { BadgeIcon } from '../components/BadgeIcon';
+import { SiretField } from '../components/SiretField';
 
 const LEGAL_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'sarl', label: 'SARL' },
@@ -134,6 +135,7 @@ export default function ShowroomConfigPage() {
   const [companyName, setCompanyName] = useState('');
   const [registeredAddress, setRegisteredAddress] = useState('');
   const [siret, setSiret] = useState('');
+  const [siretVerified, setSiretVerified] = useState(false);
   const [representativeName, setRepresentativeName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -342,6 +344,15 @@ export default function ShowroomConfigPage() {
         return;
       }
     }
+    const siretClean = siret.trim().replace(/\s/g, '');
+    if (siretClean.length !== 14 || !/^\d{14}$/.test(siretClean)) {
+      setError('Le SIRET est obligatoire et doit comporter exactement 14 chiffres.');
+      return;
+    }
+    if (!siretVerified) {
+      setError('Veuillez vérifier votre SIRET avec l\'API avant d\'enregistrer (attendez le badge « Entreprise vérifiée »).');
+      return;
+    }
     setSaving(true);
     try {
       const { error: err } = await supabase
@@ -364,7 +375,7 @@ export default function ShowroomConfigPage() {
           legal_status_other: legalStatus === 'other' ? legalStatusOther.trim() || null : null,
           company_name: companyName.trim() || null,
           registered_address: registeredAddress.trim() || null,
-          siret: siret.trim().length === 14 ? siret.trim() : null,
+          siret: siretClean,
           representative_name: representativeName.trim() || null,
           email: email.trim() || null,
           phone: phone.trim() || null,
@@ -602,19 +613,17 @@ export default function ShowroomConfigPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Numéro SIRET *</label>
-              <input
-                type="text"
+              <SiretField
                 value={siret}
-                onChange={(e) => setSiret(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                required
+                onChange={setSiret}
+                onVerified={(r) => {
+                  if (r.companyName) setCompanyName(r.companyName);
+                  if (r.address) setRegisteredAddress(r.address);
+                }}
+                onValidationChange={setSiretVerified}
+                id="showroom-siret"
                 placeholder="14 chiffres"
-                maxLength={14}
-                pattern="[0-9]{14}"
-                className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
               />
-              {siret.length > 0 && siret.length !== 14 && (
-                <p className="mt-0.5 text-xs text-amber-700">Le SIRET doit comporter 14 chiffres.</p>
-              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Nom et prénom du représentant</label>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Store, Info, Building2, Clock, MapPin } from 'lucide-react';
+import { ReportButton } from '@/app/admin/components/ReportButton';
 import {
   getCandidatureWindowStatus,
   getDurationLabel,
@@ -110,6 +111,7 @@ export type BoutiqueCardProps = {
   badges?: Badge[];
   /** Bloc d’action contextuel : bouton "Candidater (1 crédit)" côté marque, "Modifier mon profil" côté boutique, etc. */
   children: React.ReactNode;
+  showReportButton?: boolean;
 };
 
 /**
@@ -122,7 +124,7 @@ function getEffectiveShopType(s: BoutiqueCardProps['showroom']): 'permanent' | '
   return s.is_permanent === false ? 'ephemeral' : 'permanent';
 }
 
-export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, listingDates, badges = [], urgencyDays = null, matchingBadgeSlugs = [], selectedBadgeSlugs, children }: BoutiqueCardProps) {
+export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, listingDates, badges = [], urgencyDays = null, matchingBadgeSlugs = [], selectedBadgeSlugs, children, showReportButton = true }: BoutiqueCardProps) {
   const s = showroom;
   const shopType = getEffectiveShopType(s);
   const openFrom = listingDates ? listingDates.application_open_date : (s.candidature_open_from ?? null);
@@ -256,6 +258,11 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
         )}
         <div className="mt-5 flex flex-col gap-2">
           {children}
+          {showReportButton && (
+            <div className="mt-2 pt-2 border-t border-black/[0.06]">
+              <ReportButton entityType="showroom" entityId={s.id} entityName={s.name ?? undefined} />
+            </div>
+          )}
         </div>
       </div>
     </article>

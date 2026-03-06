@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -172,11 +173,14 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
-  const reserved = typeof (row as { reserved_credits?: number } | null)?.reserved_credits === 'number'
-    ? (row as { reserved_credits: number }).reserved_credits
-    : 0;
-  await supabase.from('brands').update({ reserved_credits: reserved + 1 }).eq('id', brandId);
+  const admin = getSupabaseAdmin();
+  if (admin) {
+    const { data: row } = await admin.from('brands').select('reserved_credits').eq('id', brandId).single();
+    const reserved = typeof (row as { reserved_credits?: number } | null)?.reserved_credits === 'number'
+      ? (row as { reserved_credits: number }).reserved_credits
+      : 0;
+    await admin.from('brands').update({ reserved_credits: reserved + 1 }).eq('id', brandId);
+  }
 
   return NextResponse.json({ conversationId });
 }

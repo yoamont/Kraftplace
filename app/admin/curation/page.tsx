@@ -127,13 +127,18 @@ export default function CurationPage() {
   async function acceptCandidature(id: string) {
     setSubmitting(true);
     try {
-      const { data: cand } = await supabase.from('candidatures').select('brand_id').eq('id', id).single();
+      const { data: cand } = await supabase.from('candidatures').select('brand_id, showroom_id').eq('id', id).single();
       const brandId = (cand as { brand_id?: number } | null)?.brand_id;
-      if (typeof brandId === 'number') {
-        const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', brandId).single();
-        const c = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
-        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-        await supabase.from('brands').update({ credits: Math.max(0, c - 1), reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+      const showroomId = (cand as { showroom_id?: number } | null)?.showroom_id;
+      if (typeof brandId === 'number' && typeof showroomId === 'number') {
+        let cid: string | null = null;
+        const { data: conv } = await supabase.from('conversations').select('id').eq('brand_id', brandId).eq('showroom_id', showroomId).limit(1).maybeSingle();
+        if (conv?.id) cid = conv.id as string;
+        else cid = await getOrCreateConversationId(brandId, showroomId);
+        if (cid) {
+          const { acceptCandidatureApi } = await import('@/lib/api/candidatures');
+          await acceptCandidatureApi(cid);
+        }
       }
       await supabase.from('candidatures').update({ status: 'accepted', updated_at: new Date().toISOString() }).eq('id', id);
       await loadCandidatures();
@@ -146,12 +151,18 @@ export default function CurationPage() {
     if (!confirm('Refuser cette candidature ?')) return;
     setSubmitting(true);
     try {
-      const { data: cand } = await supabase.from('candidatures').select('brand_id').eq('id', id).single();
+      const { data: cand } = await supabase.from('candidatures').select('brand_id, showroom_id').eq('id', id).single();
       const brandId = (cand as { brand_id?: number } | null)?.brand_id;
-      if (typeof brandId === 'number') {
-        const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', brandId).single();
-        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-        await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', brandId);
+      const showroomId = (cand as { showroom_id?: number } | null)?.showroom_id;
+      if (typeof brandId === 'number' && typeof showroomId === 'number') {
+        let cid: string | null = null;
+        const { data: conv } = await supabase.from('conversations').select('id').eq('brand_id', brandId).eq('showroom_id', showroomId).limit(1).maybeSingle();
+        if (conv?.id) cid = conv.id as string;
+        else cid = await getOrCreateConversationId(brandId, showroomId);
+        if (cid) {
+          const { rejectCandidatureApi } = await import('@/lib/api/candidatures');
+          await rejectCandidatureApi(cid);
+        }
       }
       await supabase.from('candidatures').update({ status: 'rejected', updated_at: new Date().toISOString() }).eq('id', id);
       await loadCandidatures();

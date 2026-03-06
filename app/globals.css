@@ -104,6 +104,19 @@ body {
   animation: scroll-badges 25s linear infinite;
 }
 
+/* Badge SIRET vérifié : fondu à l’affichage */
+@keyframes siret-badge-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.siret-verified-badge {
+  animation: siret-badge-fade 0.3s ease forwards;
+}
+
 /* Barre nav style Papier Kraft : couleur, texture recyclée, ombre intérieure */
 .nav-kraft {
   --kraft-nav-bg: #D9C5B2;

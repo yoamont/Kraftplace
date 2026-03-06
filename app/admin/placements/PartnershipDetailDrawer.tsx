@@ -81,32 +81,28 @@ export function PartnershipDetailDrawer({
 
   const handleAcceptCandidature = async (messageId: string) => {
     if (!conversationId) return;
-    const { data: conv } = await supabase.from('conversations').select('brand_id').eq('id', conversationId).single();
-    const bid = (conv as { brand_id?: number } | null)?.brand_id;
-    if (typeof bid === 'number') {
-      const { data: row } = await supabase.from('brands').select('credits, reserved_credits').eq('id', bid).single();
-      const c = typeof (row as { credits?: number })?.credits === 'number' ? (row as { credits: number }).credits : 0;
-      const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-      await supabase.from('brands').update({ credits: Math.max(0, c - 1), reserved_credits: Math.max(0, r - 1) }).eq('id', bid);
+    try {
+      const { acceptCandidatureApi } = await import('@/lib/api/candidatures');
+      await acceptCandidatureApi(conversationId, messageId);
+      await updateMessageMetadata(messageId, { status: 'accepted', accepted_at: new Date().toISOString() });
+      await sendEvent('CANDIDATURE_ACCEPTED', { reference_message_id: messageId });
+      refresh();
+    } catch (err) {
+      console.error(err);
     }
-    await updateMessageMetadata(messageId, { status: 'accepted', accepted_at: new Date().toISOString() });
-    await sendEvent('CANDIDATURE_ACCEPTED', { reference_message_id: messageId });
-    refresh();
   };
 
   const handleDeclineCandidature = async (messageId: string) => {
-    if (conversationId) {
-      const { data: conv } = await supabase.from('conversations').select('brand_id').eq('id', conversationId).single();
-      const bid = (conv as { brand_id?: number } | null)?.brand_id;
-      if (typeof bid === 'number') {
-        const { data: row } = await supabase.from('brands').select('reserved_credits').eq('id', bid).single();
-        const r = typeof (row as { reserved_credits?: number })?.reserved_credits === 'number' ? (row as { reserved_credits: number }).reserved_credits : 0;
-        await supabase.from('brands').update({ reserved_credits: Math.max(0, r - 1) }).eq('id', bid);
-      }
+    if (!conversationId) return;
+    try {
+      const { rejectCandidatureApi } = await import('@/lib/api/candidatures');
+      await rejectCandidatureApi(conversationId);
+      await updateMessageMetadata(messageId, { status: 'rejected', declined_at: new Date().toISOString() });
+      await sendEvent('CANDIDATURE_REFUSED', { reference_message_id: messageId });
+      refresh();
+    } catch (err) {
+      console.error(err);
     }
-    await updateMessageMetadata(messageId, { status: 'rejected', declined_at: new Date().toISOString() });
-    await sendEvent('CANDIDATURE_REFUSED', { reference_message_id: messageId });
-    refresh();
   };
 
   const { hasPendingCandidature, pendingCandidatureMessageId } = useMemo(() => {
@@ -168,6 +164,9 @@ export function PartnershipDetailDrawer({
           ) : (
             messages.map((m) => {
               const isMe = m.sender_id != null && userId != null && m.sender_id === userId;
+              const conversationAccepted = messages.some(
+                (x) => x.type === 'CANDIDATURE_ACCEPTED' || x.type === 'DEAL_ACCEPTED'
+              );
               return (
                 <MessageEntry
                   key={m.id}
@@ -175,6 +174,7 @@ export function PartnershipDetailDrawer({
                   isMe={isMe}
                   myLabel={myLabel}
                   otherUserName={otherPartyName}
+                  conversationAccepted={conversationAccepted}
                   brandDisplayName={brandDisplayName}
                   showroomDisplayName={showroomDisplayName}
                   viewerRole={senderRole}
@@ -200,9 +200,9 @@ export function PartnershipDetailDrawer({
                     if (!window.confirm('Annuler votre candidature ?')) return;
                     setCancelCandidatureSubmitting(true);
                     try {
+                      const { cancelCandidatureApi } = await import('@/lib/api/candidatures');
+                      if (conversationId) await cancelCandidatureApi(conversationId);
                       await updateMessageMetadata(pendingCandidatureMessageId, { status: 'cancelled', cancelled_at: new Date().toISOString() });
-                      const reserved = typeof (activeBrand as { reserved_credits?: number }).reserved_credits === 'number' ? (activeBrand as { reserved_credits: number }).reserved_credits : 0;
-                      await supabase.from('brands').update({ reserved_credits: Math.max(0, reserved - 1) }).eq('id', activeBrand.id);
                       await refresh();
                     } finally {
                       setCancelCandidatureSubmitting(false);
