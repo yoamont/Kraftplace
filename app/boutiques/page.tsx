@@ -14,7 +14,7 @@ export default function BoutiquesPage() {
         {/* Hero Boutique */}
         <section className="px-4 py-16 sm:py-24 text-center border-b border-kraft-300">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-kraft-600 mb-4">
-            Pour les boutiques et showrooms
+            Pour les boutiques
           </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-kraft-black tracking-tight max-w-3xl mx-auto leading-tight">
             Recevez des marques qui correspondent à votre lieu.

@@ -120,7 +120,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-10 h-14 px-4 flex items-center justify-between border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
+        <header className="sticky top-9 z-10 h-14 px-4 flex items-center justify-between border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
           <div className="flex items-center">
             <button type="button" className="lg:hidden p-2 -ml-2 rounded-xl text-neutral-600 hover:bg-black/[0.06] transition-colors" onClick={() => setOpen(true)} aria-label="Menu">
               <Menu className="h-5 w-5" />

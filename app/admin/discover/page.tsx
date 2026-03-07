@@ -463,7 +463,7 @@ export default function DiscoverPage() {
       <h1 className="text-xl font-light text-neutral-900 tracking-tight">Explorer</h1>
       <p className="mt-0.5 text-sm text-neutral-500 font-light">Boutiques qui partagent vos valeurs.</p>
 
-      <div className="sticky top-0 z-10 mt-6 py-4 transition-[backdrop-filter] duration-200 bg-[#FBFBFD]/70 backdrop-blur-md">
+      <div className="sticky top-9 z-10 mt-6 py-4 transition-[backdrop-filter] duration-200 bg-[#FBFBFD]/70 backdrop-blur-md">
         <p className="text-sm font-light text-neutral-500 flex flex-wrap items-center gap-x-1 gap-y-2">
           Boutiques à{' '}
           {cities.length > 0 ? (

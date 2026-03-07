@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Package } from 'lucide-react';
+import { Package, ExternalLink } from 'lucide-react';
 import { ReportButton } from '@/app/admin/components/ReportButton';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 
 export type BrandCardProps = {
   /** Données marque (mêmes champs Supabase partout : aperçu config + Parcourir les marques). */
-  brand: Pick<Brand, 'id' | 'brand_name' | 'description' | 'avatar_url' | 'image_url'>;
+  brand: Pick<Brand, 'id' | 'brand_name' | 'description' | 'avatar_url' | 'image_url' | 'instagram_handle' | 'website_url'>;
   /** Produits phares (optionnel, ex. pour "Parcourir les marques"). */
   products?: Product[];
   badges?: Badge[];
@@ -61,6 +61,32 @@ export function BrandCard({ brand, products = [], badges = [], children, showRep
           <p className="mt-2 text-sm text-neutral-600 line-clamp-2">{brand.description.trim()}</p>
         ) : (
           <p className="mt-2 text-sm text-neutral-400 italic">Description de la marque…</p>
+        )}
+        {(brand.instagram_handle?.trim() || brand.website_url?.trim()) && (
+          <div className="mt-2 flex flex-wrap gap-3">
+            {brand.instagram_handle?.trim() && (
+              <a
+                href={`https://instagram.com/${brand.instagram_handle.trim().replace(/^@/, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+              >
+                Instagram
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+            {brand.website_url?.trim() && (
+              <a
+                href={brand.website_url.trim().startsWith('http') ? brand.website_url.trim() : `https://${brand.website_url.trim()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+              >
+                Site web
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
         )}
         {products.length > 0 && (
           <div className="mt-4">

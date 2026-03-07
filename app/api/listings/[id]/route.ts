@@ -17,6 +17,7 @@ function isValidDate(s: string | null | undefined): boolean {
 /**
  * PATCH /api/listings/[id]
  * Met à jour une annonce après validation côté serveur.
+ * Ne modifie que la ligne listing ; les candidatures et conversations restent inchangées (historique préservé).
  * Body: { title?, status?, partnership_start_date?, partnership_end_date?, application_open_date?, application_close_date? }
  */
 export async function PATCH(

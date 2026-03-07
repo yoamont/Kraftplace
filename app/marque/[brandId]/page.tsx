@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Package, Loader2, ArrowLeft } from 'lucide-react';
+import { Package, Loader2, ArrowLeft, ExternalLink } from 'lucide-react';
 import type { Brand, Product } from '@/lib/supabase';
 import { ContactBrandButton } from '@/components/messaging/ContactBrandButton';
 
@@ -33,6 +33,32 @@ function BrandFiche({ brand }: { brand: Brand }) {
         </div>
         {brand.description?.trim() && (
           <p className="mt-3 text-sm text-kraft-700 leading-relaxed">{brand.description.trim()}</p>
+        )}
+        {(brand.instagram_handle?.trim() || brand.website_url?.trim()) && (
+          <div className="mt-3 flex flex-wrap gap-4">
+            {brand.instagram_handle?.trim() && (
+              <a
+                href={`https://instagram.com/${brand.instagram_handle.trim().replace(/^@/, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-kraft-700 hover:text-kraft-900"
+              >
+                Instagram
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+            {brand.website_url?.trim() && (
+              <a
+                href={brand.website_url.trim().startsWith('http') ? brand.website_url.trim() : `https://${brand.website_url.trim()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-kraft-700 hover:text-kraft-900"
+              >
+                Site web
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
         )}
         <div className="mt-4">
           <ContactBrandButton brandId={brand.id} />

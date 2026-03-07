@@ -93,6 +93,8 @@ export type ShowroomFichePreviewProps = {
   description: string;
   avatarUrl?: string;
   imageUrl: string;
+  /** Compte Instagram (sans @) pour le lien. */
+  instagramHandle?: string | null;
   /** Type d'établissement (identité de la boutique). */
   shopType?: ShopType;
   /** Pour lieu éphémère : dates d'existence du lieu (affichées sur la carte). */
@@ -109,7 +111,7 @@ export type ShowroomFichePreviewProps = {
 };
 
 /** Aperçu de la fiche boutique (utilise BoutiqueCard). Côté config boutique : action = "Modifier mon profil" / Candidater. Les infos juridiques restent confidentielles. */
-export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, shopType = 'permanent', existenceStartDate, existenceEndDate, candidatureOpenFrom, candidatureOpenTo, commissionOptions, badges = [], ownerView = false }: ShowroomFichePreviewProps) {
+export function ShowroomFichePreview({ name, city, description, avatarUrl, imageUrl, instagramHandle = null, shopType = 'permanent', existenceStartDate, existenceEndDate, candidatureOpenFrom, candidatureOpenTo, commissionOptions, badges = [], ownerView = false }: ShowroomFichePreviewProps) {
   const candidatureStatus = getCandidatureWindowStatus(candidatureOpenFrom, candidatureOpenTo);
   const showroomPreview = {
     id: 0,
@@ -118,6 +120,7 @@ export function ShowroomFichePreview({ name, city, description, avatarUrl, image
     description: description?.trim() || null,
     avatar_url: avatarUrl?.trim() || null,
     image_url: imageUrl?.trim() || null,
+    instagram_handle: instagramHandle?.trim().replace(/^@/, '') || null,
     shop_type: shopType,
     is_permanent: shopType === 'permanent',
     start_date: (shopType === 'ephemeral' && existenceStartDate?.trim()) ? existenceStartDate.trim() : null,

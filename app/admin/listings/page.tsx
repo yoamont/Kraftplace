@@ -15,8 +15,11 @@ import {
   MoreVertical,
   Copy,
   ChevronDown,
+  Trash2,
+  Link2,
 } from 'lucide-react';
 import type { Listing, ListingStatus } from '@/lib/supabase';
+import { getAnnoncePath } from '@/lib/annonce';
 
 function formatDate(d: string | null): string {
   if (!d) return '-';
@@ -27,7 +30,7 @@ function formatDate(d: string | null): string {
   }
 }
 
-type StatusFilter = 'all' | 'published' | 'draft' | 'archived';
+type StatusFilter = 'published' | 'draft' | 'archived';
 type SortBy = 'created_at' | 'partnership_start';
 
 export default function ListingsPage() {
@@ -35,12 +38,15 @@ export default function ListingsPage() {
   const { entityType, activeShowroom } = useAdminEntity();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('published');
   const [sortBy, setSortBy] = useState<SortBy>('partnership_start');
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [confirmPublishId, setConfirmPublishId] = useState<number | null>(null);
   const [moreOpenId, setMoreOpenId] = useState<number | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [copiedLinkId, setCopiedLinkId] = useState<number | null>(null);
 
   const fetchListings = useCallback(async () => {
     if (entityType !== 'showroom' || !activeShowroom) return;
@@ -61,10 +67,7 @@ export default function ListingsPage() {
   }, [entityType, activeShowroom?.id, fetchListings]);
 
   const filteredAndSorted = listings
-    .filter((l) => {
-      if (statusFilter === 'all') return true;
-      return l.status === statusFilter;
-    })
+    .filter((l) => l.status === statusFilter)
     .sort((a, b) => {
       if (sortBy === 'created_at') {
         const ac = a.created_at ?? '';
@@ -79,6 +82,8 @@ export default function ListingsPage() {
   const publishedListing = listings.find((l) => l.status === 'published');
 
   const setListingStatus = async (id: number, status: ListingStatus, optimistic = true) => {
+    // Important : on ne met à jour que le statut de l'annonce. Aucune suppression ni modification
+    // des candidatures ni des conversations — l'historique reste intact (publié, brouillon, archivé).
     if (optimistic) {
       if (status === 'published' && publishedListing && publishedListing.id !== id) {
         setListings((prev) =>
@@ -111,9 +116,15 @@ export default function ListingsPage() {
       return false;
     }
     try {
+      const { data: session } = await supabase.auth.getSession();
       const res = await fetch('/api/validate-siret', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.session?.access_token
+            ? { Authorization: `Bearer ${session.session.access_token}` }
+            : {}),
+        },
         body: JSON.stringify({ siret }),
       });
       const data = await res.json().catch(() => ({}));
@@ -172,6 +183,44 @@ export default function ListingsPage() {
     }
   };
 
+  const handleDeleteClick = (listing: Listing) => {
+    setMoreOpenId(null);
+    setConfirmDeleteId(listing.id);
+  };
+
+  const handleConfirmDelete = async () => {
+    const id = confirmDeleteId;
+    if (!id || !activeShowroom) return;
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', id)
+        .eq('showroom_id', activeShowroom.id);
+      if (error) {
+        alert('Impossible de supprimer l\'annonce. Réessayez.');
+        return;
+      }
+      setListings((prev) => prev.filter((l) => l.id !== id));
+      setConfirmDeleteId(null);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const copyCandidatureLink = (listingId: number) => {
+    const path = getAnnoncePath(activeShowroom?.name ?? null, listingId);
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}${path}`;
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setCopiedLinkId(listingId);
+        setTimeout(() => setCopiedLinkId(null), 2000);
+      },
+      () => alert('Copie impossible')
+    );
+  };
+
   if (entityType === 'brand') {
     return (
       <div className="max-w-2xl mx-auto py-8 text-center">
@@ -190,64 +239,75 @@ export default function ListingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto min-h-[50vh] bg-[#FBFBFD]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Annonces</h1>
-          <p className="mt-0.5 text-sm font-light text-neutral-500">
-            Une seule annonce peut être en ligne. Les marques voient l’annonce publiée sur « Vendre mes produits ».
-          </p>
-        </div>
-        <Link
-          href="/admin/listings/new"
-          className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150 shrink-0"
-        >
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          Nouvelle
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Annonces</h1>
+        <p className="mt-0.5 text-sm font-light text-neutral-500">
+          Une seule annonce peut être en ligne. Les marques voient l’annonce publiée sur « Vendre mes produits ».
+        </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mt-6 mb-6">
-        <div className="inline-flex rounded-xl p-0.5 bg-neutral-100 border border-black/[0.06]">
-          {(['all', 'published', 'draft', 'archived'] as const).map((key) => (
+      {/* Bandeau : toggle 3 options + tri + Nouvelle annonce */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="inline-flex rounded-xl p-1 bg-neutral-100 border border-black/[0.06]">
+          {(['published', 'draft', 'archived'] as const).map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => setStatusFilter(key)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === key ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                statusFilter === key
+                  ? 'bg-white text-neutral-900 shadow-sm border border-black/[0.06]'
+                  : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
-              {key === 'all' ? 'Toutes' : key === 'published' ? 'Publiée' : key === 'draft' ? 'Brouillon' : 'Archives'}
+              {key === 'published' ? 'Publié' : key === 'draft' ? 'Brouillon' : 'Archives'}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-black/[0.06] bg-white px-3 py-2 w-full sm:w-auto min-w-0">
-          <Calendar className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="text-sm font-medium text-neutral-900 bg-transparent border-0 focus:ring-0 focus:outline-none cursor-pointer"
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 rounded-xl border border-black/[0.06] bg-neutral-50 px-3 py-2">
+            <Calendar className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="text-sm font-medium text-neutral-900 bg-transparent border-0 focus:ring-0 focus:outline-none cursor-pointer min-w-[140px]"
+            >
+              <option value="partnership_start">Par date de vente</option>
+              <option value="created_at">Par date de création</option>
+            </select>
+            <ChevronDown className="h-4 w-4 text-neutral-400 shrink-0 pointer-events-none" strokeWidth={1.5} />
+          </div>
+          <Link
+            href="/admin/listings/new"
+            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150 shrink-0"
           >
-            <option value="partnership_start">Par date de vente</option>
-            <option value="created_at">Par date de création</option>
-          </select>
-          <ChevronDown className="h-4 w-4 text-neutral-400 shrink-0 pointer-events-none" strokeWidth={1.5} />
+            <Plus className="h-4 w-4" strokeWidth={1.5} />
+            Nouvelle annonce
+          </Link>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="mt-6 space-y-4">
         {filteredAndSorted.length === 0 ? (
           <div className="rounded-[12px] border border-black/[0.06] bg-white p-8 text-center">
             <FileText className="h-12 w-12 text-neutral-400 mx-auto mb-3" strokeWidth={1.5} />
-            <p className="font-medium text-neutral-900">Aucune annonce</p>
-            <p className="text-sm font-light text-neutral-500 mt-1">Créez une session pour recevoir des candidatures.</p>
-            <Link
-              href="/admin/listings/new"
-              className="mt-4 inline-flex items-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
-            >
-              <Plus className="h-4 w-4" strokeWidth={1.5} />
-              Créer
-            </Link>
+            <p className="font-medium text-neutral-900">
+              {statusFilter === 'published' ? 'Aucune annonce publiée' : statusFilter === 'draft' ? 'Aucun brouillon' : 'Aucune annonce archivée'}
+            </p>
+            <p className="text-sm font-light text-neutral-500 mt-1">
+              {statusFilter === 'draft' && 'Créez une session pour recevoir des candidatures.'}
+              {statusFilter === 'published' && 'Publiez un brouillon pour le rendre visible aux marques.'}
+              {statusFilter === 'archived' && 'Les annonces archivées n’apparaissent plus ici.'}
+            </p>
+            {(statusFilter === 'published' || statusFilter === 'draft') && (
+              <Link
+                href="/admin/listings/new"
+                className="mt-4 inline-flex items-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
+              >
+                <Plus className="h-4 w-4" strokeWidth={1.5} />
+                Créer une annonce
+              </Link>
+            )}
           </div>
         ) : (
           filteredAndSorted.map((listing) => (
@@ -259,35 +319,37 @@ export default function ListingsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="font-semibold text-neutral-900 text-lg">{listing.title}</h2>
-                    {listing.status !== 'archived' && (
-                      <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                        <span className="text-sm font-medium text-neutral-700">En ligne sur Kraftplace</span>
+                    <div className="inline-flex rounded-lg p-1 bg-neutral-100 border border-black/[0.06] shrink-0">
+                      {(['published', 'draft', 'archived'] as const).map((status) => (
                         <button
+                          key={status}
                           type="button"
-                          role="switch"
-                          aria-checked={listing.status === 'published'}
                           disabled={!!togglingId}
-                          onClick={() => handleToggle(listing)}
-                          className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border border-black/[0.08] transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-900/20 ${
-                            listing.status === 'published' ? 'bg-neutral-900' : 'bg-neutral-200'
+                          onClick={() => {
+                            if (listing.status === status) return;
+                            if (status === 'published') {
+                              handleToggle(listing);
+                              return;
+                            }
+                            if (status === 'archived') {
+                              setListingStatus(listing.id, 'archived');
+                              return;
+                            }
+                            setListingStatus(listing.id, 'draft');
+                          }}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                            listing.status === status
+                              ? 'bg-white text-neutral-900 shadow-sm border border-black/[0.06]'
+                              : 'text-neutral-600 hover:text-neutral-900'
                           } ${togglingId ? 'opacity-60 pointer-events-none' : ''}`}
                         >
-                          <span
-                            className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transform transition-transform mt-0.5 ml-0.5 ${
-                              listing.status === 'published' ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
+                          {status === 'published' ? 'Publié' : status === 'draft' ? 'Brouillon' : 'Archives'}
                         </button>
-                        {togglingId === listing.id && (
-                          <Loader2 className="h-4 w-4 animate-spin text-neutral-400 shrink-0" strokeWidth={1.5} />
-                        )}
-                      </label>
-                    )}
-                    {listing.status === 'archived' && (
-                      <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full">
-                        Archivée
-                      </span>
-                    )}
+                      ))}
+                      {togglingId === listing.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-neutral-400 shrink-0 self-center ml-1" strokeWidth={1.5} />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex items-start gap-2 text-sm">
@@ -318,6 +380,15 @@ export default function ListingsPage() {
                     >
                       Candidatures
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => copyCandidatureLink(listing.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-neutral-700 hover:bg-white hover:text-neutral-900 transition-colors"
+                      title="Copier le lien de candidature"
+                    >
+                      <Link2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      {copiedLinkId === listing.id ? 'Copié' : 'Lien candidature'}
+                    </button>
                     <Link
                       href={`/admin/listings/${listing.id}/edit`}
                       className="px-3 py-2 rounded-md text-sm font-medium text-neutral-700 hover:bg-white hover:text-neutral-900 transition-colors"
@@ -355,6 +426,15 @@ export default function ListingsPage() {
                               <Copy className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                             )}
                             Dupliquer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClick(listing)}
+                            disabled={!!deletingId}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
+                          >
+                            <Trash2 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                            Supprimer
                           </button>
                         </div>
                       </>
@@ -396,6 +476,44 @@ export default function ListingsPage() {
                 className="px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
               >
                 Continuer
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {confirmDeleteId && (
+        <>
+          <div className="fixed inset-0 bg-black/20 z-40 backdrop-blur-[2px]" aria-hidden onClick={() => !deletingId && setConfirmDeleteId(null)} />
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-[12px] border border-black/[0.06] bg-white p-5 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-delete-title"
+          >
+            <h3 id="confirm-delete-title" className="font-semibold text-neutral-900 text-lg">
+              Supprimer cette annonce ?
+            </h3>
+            <p className="mt-2 text-sm font-light text-neutral-600">
+              L&apos;annonce et l&apos;historique des candidatures associées seront définitivement supprimés. Cette action est irréversible.
+            </p>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={!!deletingId}
+                className="px-4 py-2 rounded-xl border border-black/[0.08] text-neutral-700 text-sm font-medium hover:bg-neutral-50 disabled:opacity-60"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={!!deletingId}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60 inline-flex items-center gap-2"
+              >
+                {deletingId ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> : <Trash2 className="h-4 w-4" strokeWidth={1.5} />}
+                Supprimer
               </button>
             </div>
           </div>

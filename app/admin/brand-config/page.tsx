@@ -58,6 +58,8 @@ export default function BrandConfigPage() {
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([]);
   const [initialBadgeIds, setInitialBadgeIds] = useState<number[]>([]);
+  const [instagramHandle, setInstagramHandle] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   const MAX_BADGES = 5;
 
@@ -85,6 +87,8 @@ export default function BrandConfigPage() {
       const ids = ((brandBadgesData as { badge_id: number }[]) ?? []).map((r) => r.badge_id);
       setSelectedBadgeIds(ids);
       setInitialBadgeIds(ids);
+      setInstagramHandle(activeBrand.instagram_handle ?? '');
+      setWebsiteUrl(activeBrand.website_url ?? '');
       setLoading(false);
     })();
   }, [entityType, activeBrand]);
@@ -196,7 +200,9 @@ export default function BrandConfigPage() {
       phone.trim() !== (activeBrand.phone ?? '') ||
       (rcProAttestationPath ?? '') !== (activeBrand.rc_pro_attestation_path ?? '') ||
       selectedBadgeIds.length !== initialBadgeIds.length ||
-      selectedBadgeIds.some((id, i) => initialBadgeIds[i] !== id));
+      selectedBadgeIds.some((id, i) => initialBadgeIds[i] !== id) ||
+      instagramHandle.trim() !== (activeBrand.instagram_handle ?? '') ||
+      websiteUrl.trim() !== (activeBrand.website_url ?? ''));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -229,6 +235,8 @@ export default function BrandConfigPage() {
           email: email.trim() || null,
           phone: phone.trim() || null,
           rc_pro_attestation_path: rcProAttestationPath || null,
+          instagram_handle: instagramHandle.trim() || null,
+          website_url: websiteUrl.trim() || null,
         })
         .eq('id', activeBrand.id);
       if (err) {
@@ -307,7 +315,7 @@ export default function BrandConfigPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            placeholder="Présentez votre marque aux showrooms…"
+            placeholder="Présentez votre marque…"
             className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none placeholder:text-neutral-400"
           />
         </div>
@@ -409,6 +417,27 @@ export default function BrandConfigPage() {
               );
             })}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Instagram</label>
+          <input
+            type="text"
+            value={instagramHandle}
+            onChange={(e) => setInstagramHandle(e.target.value)}
+            placeholder="mamarque (sans @)"
+            className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Site web</label>
+          <input
+            type="url"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            placeholder="https://www.mamarque.fr"
+            className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+          />
         </div>
 
         <div className="border-t border-neutral-200 pt-6 mt-6">
@@ -569,6 +598,8 @@ export default function BrandConfigPage() {
             brandId={activeBrand.id}
             badges={allBadges.filter((b) => selectedBadgeIds.includes(b.id))}
             linkToCollection
+            instagramHandle={instagramHandle.trim() || null}
+            websiteUrl={websiteUrl.trim() || null}
           />
         </div>
       </div>

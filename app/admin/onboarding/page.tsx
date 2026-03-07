@@ -95,7 +95,7 @@ export default function OnboardingPage() {
         description: showroomDescription.trim() || null,
         image_url: showroomImageUrl.trim() || null,
         default_commission_rate: null,
-        instagram_handle: showroomInstagram.trim() || null,
+        instagram_handle: showroomInstagram.trim().replace(/^@/, '') || null,
         is_permanent: showroomPermanent,
         start_date: showroomPermanent ? null : showroomStartDate || null,
         end_date: showroomPermanent ? null : showroomEndDate || null,
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Instagram</label>
-              <input type="text" value={showroomInstagram} onChange={(e) => setShowroomInstagram(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="@maboutique" />
+              <input type="text" value={showroomInstagram} onChange={(e) => setShowroomInstagram(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400" placeholder="maboutique (sans @)" />
             </div>
             <div>
               <span className="block text-sm font-medium text-neutral-900 mb-2">Type</span>

@@ -37,7 +37,7 @@ export default function HomePage() {
       style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(251,251,253,0.98), #FBFBFD)' }}
     >
       {/* Barre de menu ultra-fine - style Papier Kraft */}
-      <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-50">
+      <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-9 z-50">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-[#1A1A1A] font-semibold tracking-tight kraftplace-wordmark text-base">Kraftplace</span>
           <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider text-[#5c4a38] bg-[#c9b896]/40 border border-[#C4B09A]">
@@ -131,6 +131,14 @@ export default function HomePage() {
             );
           })}
         </nav>
+        <div className="shrink-0 py-2 text-center">
+          <Link
+            href="/mentions-legales"
+            className="text-[11px] text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            Mentions légales
+          </Link>
+        </div>
       </main>
     </div>
   );

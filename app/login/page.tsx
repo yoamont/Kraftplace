@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,8 @@ export default function LoginPage() {
         setError(err.message);
         return;
       }
-      router.push('/admin');
+      const next = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/admin';
+      router.push(next);
     } finally {
       setLoading(false);
     }
@@ -77,5 +80,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FBFBFD] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center text-neutral-500">Chargement…</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -44,6 +44,10 @@ export type Brand = {
   credits: number | null;
   /** Crédits réservés (candidatures en attente), débités à l'acceptation */
   reserved_credits: number | null;
+  /** Compte Instagram (sans @), ex. mamarque */
+  instagram_handle: string | null;
+  /** URL du site web de la marque */
+  website_url: string | null;
 };
 
 export type Showroom = {

@@ -86,7 +86,7 @@ function snapshotFromShowroom(s: Showroom, options: ShowroomCommissionOption[]):
     description: s.description ?? '',
     avatarUrl: s.avatar_url ?? '',
     imageUrl: s.image_url ?? '',
-    instagramHandle: s.instagram_handle ?? '',
+    instagramHandle: (s.instagram_handle ?? '').replace(/^@/, ''),
     shopType: (s.shop_type === 'ephemeral' ? 'ephemeral' : 'permanent') as ShopType,
     existenceStartDate: s.start_date ?? '',
     existenceEndDate: s.end_date ?? '',
@@ -200,7 +200,7 @@ export default function ShowroomConfigPage() {
       description,
       avatarUrl,
       imageUrl,
-      instagramHandle,
+      instagramHandle: instagramHandle.trim().replace(/^@/, ''),
       shopType,
       existenceStartDate,
       existenceEndDate,
@@ -366,7 +366,7 @@ export default function ShowroomConfigPage() {
           avatar_url: avatarUrl.trim() || null,
           image_url: imageUrl.trim() || null,
           default_commission_rate: null,
-          instagram_handle: instagramHandle.trim() || null,
+          instagram_handle: instagramHandle.trim().replace(/^@/, '') || null,
           shop_type: shopType,
           is_permanent: shopType === 'permanent',
           start_date: shopType === 'ephemeral' ? existenceStartDate.trim() || null : null,
@@ -430,7 +430,7 @@ export default function ShowroomConfigPage() {
         description: description.trim(),
         avatarUrl: avatarUrl.trim(),
         imageUrl: imageUrl.trim(),
-        instagramHandle: instagramHandle.trim(),
+        instagramHandle: instagramHandle.trim().replace(/^@/, ''),
         shopType,
         existenceStartDate: shopType === 'ephemeral' ? existenceStartDate : '',
         existenceEndDate: shopType === 'ephemeral' ? existenceEndDate : '',
@@ -731,7 +731,7 @@ export default function ShowroomConfigPage() {
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1">Instagram</label>
-          <input type="text" value={instagramHandle} onChange={(e) => setInstagramHandle(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="@maboutique" />
+          <input type="text" value={instagramHandle} onChange={(e) => setInstagramHandle(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400" placeholder="maboutique (sans @)" />
         </div>
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-2">Type d'établissement</label>
@@ -833,6 +833,7 @@ export default function ShowroomConfigPage() {
             description={description}
             avatarUrl={avatarUrl}
             imageUrl={imageUrl}
+            instagramHandle={instagramHandle.trim() ? instagramHandle.trim().replace(/^@/, '') : null}
             shopType={shopType}
             existenceStartDate={shopType === 'ephemeral' ? existenceStartDate : undefined}
             existenceEndDate={shopType === 'ephemeral' ? existenceEndDate : undefined}

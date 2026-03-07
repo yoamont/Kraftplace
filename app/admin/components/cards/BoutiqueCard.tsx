@@ -1,6 +1,6 @@
 'use client';
 
-import { Store, Info, Building2, Clock, MapPin } from 'lucide-react';
+import { Store, Info, Building2, Clock, MapPin, ExternalLink } from 'lucide-react';
 import { ReportButton } from '@/app/admin/components/ReportButton';
 import {
   getCandidatureWindowStatus,
@@ -97,6 +97,7 @@ export type BoutiqueCardProps = {
     | 'description'
     | 'avatar_url'
     | 'image_url'
+    | 'instagram_handle'
     | 'shop_type'
     | 'is_permanent'
     | 'start_date'
@@ -210,6 +211,17 @@ export function BoutiqueCard({ showroom, commissionOptions = [], listingTitle, l
         {s.description && <p className="text-sm text-neutral-600 mt-3 line-clamp-2 font-light leading-relaxed text-left">{s.description}</p>}
         {!s.description?.trim() && (
           <p className="text-sm text-neutral-400 mt-3 italic font-light text-left">Description de la boutique…</p>
+        )}
+        {s.instagram_handle?.trim() && (
+          <a
+            href={`https://instagram.com/${s.instagram_handle.trim().replace(/^@/, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+          >
+            Instagram
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
         {shopType === 'ephemeral' && (s.start_date || s.end_date) && (
           <p className="text-xs text-neutral-500 mt-1.5 text-left">

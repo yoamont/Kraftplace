@@ -15,16 +15,20 @@ type Props = {
   badges?: Badge[];
   /** Si true, le CTA est un lien vers la page collection. Sinon juste un bouton visuel (preview). */
   linkToCollection?: boolean;
+  instagramHandle?: string | null;
+  websiteUrl?: string | null;
 };
 
 /** Aperçu de la fiche marque (utilise BrandCard). Même rendu que l’onglet Marques côté boutique. */
-export function BrandFichePreview({ brandName, description, avatarUrl, imageUrl, brandId, badges = [], linkToCollection = true }: Props) {
+export function BrandFichePreview({ brandName, description, avatarUrl, imageUrl, brandId, badges = [], linkToCollection = true, instagramHandle = null, websiteUrl = null }: Props) {
   const brandPreview = {
     id: brandId,
     brand_name: brandName || 'Nom de la marque',
     description,
     avatar_url: avatarUrl,
     image_url: imageUrl,
+    instagram_handle: instagramHandle ?? null,
+    website_url: websiteUrl ?? null,
   };
 
   return (

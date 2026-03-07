@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Loader2, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 type SiretFieldProps = {
   value: string;
@@ -48,9 +49,15 @@ export function SiretField({
       setChecking(true);
       setError(null);
       try {
+        const { data: session } = await supabase.auth.getSession();
         const res = await fetch('/api/validate-siret', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.session?.access_token
+              ? { Authorization: `Bearer ${session.session.access_token}` }
+              : {}),
+          },
           body: JSON.stringify({ siret }),
         });
         const data = await res.json().catch(() => ({}));

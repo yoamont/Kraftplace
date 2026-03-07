@@ -14,7 +14,7 @@ export function LandingHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
+    <header className="sticky top-9 z-50 flex items-center justify-between px-4 py-3 border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
       <Link href="/" className="flex items-center gap-3">
         <span className="text-neutral-900 font-semibold tracking-tight kraftplace-wordmark text-lg">Kraftplace</span>
         <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider text-neutral-500 bg-neutral-100 border border-black/[0.06]">

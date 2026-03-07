@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAdminEntity } from '../../context/AdminEntityContext';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function AddProductPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const { entityType, activeBrand } = useAdminEntity();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -55,7 +57,11 @@ export default function AddProductPage() {
         setError(err.message);
         return;
       }
-      router.push('/admin/products');
+      if (returnTo && returnTo.startsWith('/')) {
+        router.push(returnTo);
+      } else {
+        router.push('/admin/products');
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +81,13 @@ export default function AddProductPage() {
       <Link href="/admin/products" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6">
         <ArrowLeft className="h-4 w-4" /> Retour au catalogue
       </Link>
+      {returnTo && returnTo.startsWith('/') && (
+        <p className="mb-2 text-sm text-neutral-500">
+          <Link href={returnTo} className="text-neutral-700 hover:underline">
+            ← Retour à la candidature
+          </Link>
+        </p>
+      )}
       <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Ajouter un produit</h1>
       <p className="mt-0.5 text-sm font-light text-neutral-500">Nouveau produit au catalogue.</p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">

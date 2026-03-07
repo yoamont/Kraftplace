@@ -32,7 +32,7 @@ export default function BrowseBrandsPage() {
       const [brandsRes, productsRes, { data: badgesData }, { data: brandBadgesData }] = await Promise.all([
         supabase
           .from('brands')
-          .select('id, brand_name, avatar_url, description, image_url')
+          .select('id, brand_name, avatar_url, description, image_url, instagram_handle, website_url')
           .in('id', brandIds)
           .order('brand_name'),
         supabase

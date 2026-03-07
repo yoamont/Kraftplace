@@ -29,6 +29,8 @@ COMMENT ON COLUMN public.listings.application_open_date IS 'Ouverture des candid
 COMMENT ON COLUMN public.listings.application_close_date IS 'Clôture des candidatures pour cette annonce.';
 
 -- ---------- 2) Contrainte : une seule annonce published par boutique ----------
+-- Ce trigger ne fait qu'UPDATE le statut des autres annonces (draft). Il ne supprime ni ne modifie
+-- aucune candidature ni conversation : l'historique des candidatures est toujours conservé.
 CREATE OR REPLACE FUNCTION public.ensure_single_published_listing_per_showroom()
 RETURNS trigger AS $$
 BEGIN
@@ -54,6 +56,7 @@ CREATE TRIGGER listings_single_published
 ALTER TABLE public.listings ENABLE ROW LEVEL SECURITY;
 
 -- Sélection : propriétaire de la boutique OU listing publié (Discover marque)
+DROP POLICY IF EXISTS "listings_select_own_or_published" ON public.listings;
 CREATE POLICY "listings_select_own_or_published"
   ON public.listings FOR SELECT
   USING (
@@ -61,18 +64,21 @@ CREATE POLICY "listings_select_own_or_published"
     OR status = 'published'
   );
 
+DROP POLICY IF EXISTS "listings_insert_own" ON public.listings;
 CREATE POLICY "listings_insert_own"
   ON public.listings FOR INSERT
   WITH CHECK (
     showroom_id IN (SELECT id FROM public.showrooms WHERE owner_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "listings_update_own" ON public.listings;
 CREATE POLICY "listings_update_own"
   ON public.listings FOR UPDATE
   USING (
     showroom_id IN (SELECT id FROM public.showrooms WHERE owner_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "listings_delete_own" ON public.listings;
 CREATE POLICY "listings_delete_own"
   ON public.listings FOR DELETE
   USING (

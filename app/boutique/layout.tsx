@@ -147,7 +147,7 @@ export default function BoutiqueLayout({
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-10 flex items-center h-14 px-4 bg-gray-50 border-b border-gray-200">
+        <header className="sticky top-9 z-10 flex items-center h-14 px-4 bg-gray-50 border-b border-gray-200">
           <button
             type="button"
             aria-label="Ouvrir le menu"
