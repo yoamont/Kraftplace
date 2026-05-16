@@ -5,10 +5,6 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-/**
- * Vérifie si une candidature acceptée existe déjà pour (brand_id, showroom_id).
- * Source de vérité : messages (CANDIDATURE_SENT puis CANDIDATURE_ACCEPTED dans la conversation).
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function hasAcceptedCandidature(supabase: any, conversationId: string): Promise<boolean> {
   const { data: messages } = await supabase
@@ -27,16 +23,14 @@ async function hasAcceptedCandidature(supabase: any, conversationId: string): Pr
 
 /**
  * POST /api/candidatures/send
- * Crée une candidature (message CANDIDATURE_SENT + reserved_credits).
- * Bloque si une candidature a déjà été acceptée pour cette marque/boutique.
- * Body: { brandId, showroomId, metadata, motivationMessage?, conversationId? }
- * Header: Authorization: Bearer <access_token> (session Supabase)
+ * Body: { brandId, showroomId, listingId?, metadata, motivationMessage?, conversationId? }
+ * Header: Authorization: Bearer <access_token>
  */
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   if (!token) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -68,7 +62,7 @@ export async function POST(request: NextRequest) {
     const accepted = await hasAcceptedCandidature(supabase, conversationId);
     if (accepted) {
       return NextResponse.json(
-        { error: 'Action impossible : Vous avez déjà un accord avec cette boutique.' },
+        { error: 'Action impossible : Vous avez deja un accord avec cette boutique.' },
         { status: 400 }
       );
     }
@@ -91,7 +85,7 @@ export async function POST(request: NextRequest) {
       const accepted = await hasAcceptedCandidature(supabase, conversationId);
       if (accepted) {
         return NextResponse.json(
-          { error: 'Action impossible : Vous avez déjà un accord avec cette boutique.' },
+          { error: 'Action impossible : Vous avez deja un accord avec cette boutique.' },
           { status: 400 }
         );
       }
@@ -106,7 +100,7 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single();
       if (insertErr) {
-        return NextResponse.json({ error: 'Erreur création conversation' }, { status: 500 });
+        return NextResponse.json({ error: 'Erreur creation conversation' }, { status: 500 });
       }
       conversationId = (inserted?.id as string) ?? null;
     }
@@ -118,7 +112,29 @@ export async function POST(request: NextRequest) {
 
   const { data: user } = await supabase.auth.getUser();
   if (!user?.user?.id) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
+  }
+
+  /* FIX SECURITE : verifier que le brandId appartient a l utilisateur */
+  const { data: ownedBrand } = await supabase
+    .from('brands')
+    .select('id, credits, reserved_credits')
+    .eq('id', brandId)
+    .eq('owner_id', user.user.id)
+    .single();
+
+  if (!ownedBrand) {
+    return NextResponse.json({ error: 'Marque non trouvee ou acces refuse' }, { status: 403 });
+  }
+
+  /* FIX SECURITE : verifier que le createur a assez de credits */
+  const brand = ownedBrand as { id: number; credits: number; reserved_credits: number };
+  const availableCredits = brand.credits - brand.reserved_credits;
+  if (availableCredits <= 0) {
+    return NextResponse.json(
+      { error: 'Credits insuffisants. Veuillez recharger vos credits avant de postuler.' },
+      { status: 402 }
+    );
   }
 
   const enrichedMetadata: Record<string, unknown> = { ...(metadata ?? {}), status: (metadata?.status as string) ?? 'pending' };
@@ -171,13 +187,13 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  /* Incrementer reserved_credits via admin (contourne RLS) */
   const admin = getSupabaseAdmin();
   if (admin) {
-    const { data: row } = await admin.from('brands').select('reserved_credits').eq('id', brandId).single();
-    const reserved = typeof (row as { reserved_credits?: number } | null)?.reserved_credits === 'number'
-      ? (row as { reserved_credits: number }).reserved_credits
-      : 0;
-    await admin.from('brands').update({ reserved_credits: reserved + 1 }).eq('id', brandId);
+    await admin
+      .from('brands')
+      .update({ reserved_credits: brand.reserved_credits + 1 })
+      .eq('id', brandId);
   }
 
   return NextResponse.json({ conversationId });

@@ -9,7 +9,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 export async function POST(request: NextRequest) {
   if (!stripeSecret || !webhookSecret) {
     return NextResponse.json(
-      { error: 'Stripe ou webhook non configuré.' },
+      { error: 'Stripe ou webhook non configure.' },
       { status: 501 }
     );
   }
@@ -32,6 +32,12 @@ export async function POST(request: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+
+  /* FIX SECURITE : verifier que le paiement est bien confirme */
+  if (session.payment_status !== 'paid') {
+    return NextResponse.json({ received: true, skipped: 'payment_status not paid' });
+  }
+
   const brandIdRaw = session.client_reference_id ?? session.metadata?.brand_id;
   const pack = session.metadata?.pack;
 
@@ -53,7 +59,7 @@ export async function POST(request: NextRequest) {
   const admin = getSupabaseAdmin();
   if (!admin) {
     return NextResponse.json(
-      { error: 'Supabase admin non configuré (SUPABASE_SERVICE_ROLE_KEY).' },
+      { error: 'Supabase admin non configure (SUPABASE_SERVICE_ROLE_KEY).' },
       { status: 501 }
     );
   }
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   const { added, error: addError } = await addCreditsForSession(admin, sessionId, brandId, creditsToAdd);
   if (addError) {
-    return NextResponse.json({ error: 'Échec mise à jour crédits', details: addError }, { status: 500 });
+    return NextResponse.json({ error: 'Echec mise a jour credits', details: addError }, { status: 500 });
   }
   return NextResponse.json({ received: true, credits_added: added ? creditsToAdd : 0, already_processed: !added });
 }
