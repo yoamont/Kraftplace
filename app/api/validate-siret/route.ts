@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateSiret } from '@/services/siretService';
+import { checkRateLimit, getRequestIP } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -16,6 +17,16 @@ const TEST_SIRET_ALLOWED_EMAIL = 'yoann.montagnon@gmail.com';
  * Retourne { valid, error?, companyName?, address?, siren? } pour préremplir le profil.
  */
 export async function POST(request: NextRequest) {
+  /* Rate limiting : max 10 validations SIRET par minute par IP */
+  const ip = getRequestIP(request.headers);
+  const rl = checkRateLimit({ id: 'validate-siret', limit: 10, windowSeconds: 60 }, ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { valid: false, error: 'Trop de requetes. Reessayez dans quelques instants.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+    );
+  }
+
   let body: { siret?: string };
   try {
     body = await request.json();

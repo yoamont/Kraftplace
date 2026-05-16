@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getRequestIP } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -14,6 +15,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Stripe non configure (STRIPE_SECRET_KEY manquant).' },
       { status: 501 }
+    );
+  }
+
+  /* Rate limiting : max 5 requetes par minute par IP */
+  const ip = getRequestIP(request.headers);
+  const rl = checkRateLimit({ id: 'checkout', limit: 5, windowSeconds: 60 }, ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de requetes. Reessayez dans quelques instants.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
     );
   }
 

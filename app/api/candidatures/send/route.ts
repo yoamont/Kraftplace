@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { checkRateLimit, getRequestIP } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -27,6 +28,16 @@ async function hasAcceptedCandidature(supabase: any, conversationId: string): Pr
  * Header: Authorization: Bearer <access_token>
  */
 export async function POST(request: NextRequest) {
+  /* Rate limiting : max 10 candidatures par minute par IP */
+  const ip = getRequestIP(request.headers);
+  const rl = checkRateLimit({ id: 'candidatures-send', limit: 10, windowSeconds: 60 }, ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de requetes. Reessayez dans quelques instants.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+    );
+  }
+
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   if (!token) {
@@ -125,6 +136,19 @@ export async function POST(request: NextRequest) {
 
   if (!ownedBrand) {
     return NextResponse.json({ error: 'Marque non trouvee ou acces refuse' }, { status: 403 });
+  }
+
+  /* FIX SECURITE : bloquer auto-candidature (meme user = brand + showroom) */
+  const { data: targetShowroom } = await supabase
+    .from('showrooms')
+    .select('owner_id')
+    .eq('id', showroomId)
+    .single();
+  if (targetShowroom && (targetShowroom as { owner_id: string }).owner_id === user.user.id) {
+    return NextResponse.json(
+      { error: 'Vous ne pouvez pas postuler a votre propre showroom.' },
+      { status: 400 }
+    );
   }
 
   /* FIX SECURITE : verifier que le createur a assez de credits */

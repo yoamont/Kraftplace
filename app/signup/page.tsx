@@ -5,6 +5,19 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { score, label: 'Faible', color: 'bg-red-500' };
+  if (score <= 2) return { score, label: 'Moyen', color: 'bg-orange-400' };
+  if (score <= 3) return { score, label: 'Bon', color: 'bg-yellow-400' };
+  return { score, label: 'Fort', color: 'bg-green-500' };
+}
+
 function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,6 +26,7 @@ function SignupContent() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const strength = password.length > 0 ? getPasswordStrength(password) : null;
 
   const redirectTo = type === 'brand' || type === 'showroom' ? `/admin/onboarding?type=${type}` : '/admin';
 
@@ -70,6 +84,18 @@ function SignupContent() {
               minLength={6}
               className="w-full px-4 py-2.5 rounded-xl border border-black/[0.08] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/20"
             />
+            {strength && (
+              <div className="mt-2">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= strength.score ? strength.color : 'bg-gray-200'}`} />
+                  ))}
+                </div>
+                <p className={`text-xs mt-1 ${strength.score <= 1 ? 'text-red-600' : strength.score <= 2 ? 'text-orange-500' : 'text-green-600'}`}>
+                  {strength.label}
+                </p>
+              </div>
+            )}
           </div>
           {error && <p className="text-sm font-medium text-red-600 bg-red-50 p-2 rounded-xl">{error}</p>}
           <button

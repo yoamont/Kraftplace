@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Inter, Geist_Mono, Playfair_Display } from "next/font/google";
-import { Analytics } from "@vercel/analytics/react";
+import CookieConsent from "@/components/CookieConsent";
+import ConditionalAnalytics from "@/components/ConditionalAnalytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,7 +49,8 @@ export default function RootLayout({
           </span>
         </div>
         {children}
-        <Analytics />
+        <CookieConsent />
+        <ConditionalAnalytics />
       </body>
     </html>
   );
