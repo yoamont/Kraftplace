@@ -23,8 +23,29 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Kraftplace",
-  description: "Mise en relation marques et boutiques",
+  title: {
+    default: "Kraftplace — Le trait d'union entre créateurs et boutiques",
+    template: "%s | Kraftplace",
+  },
+  description: "Kraftplace met en relation les marques artisanales et éthiques avec les boutiques engagées. Trouvez votre prochain partenariat.",
+  metadataBase: new URL("https://kraftplace.fr"),
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "https://kraftplace.fr",
+    siteName: "Kraftplace",
+    title: "Kraftplace — Le trait d'union entre créateurs et boutiques",
+    description: "Kraftplace met en relation les marques artisanales et éthiques avec les boutiques engagées.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kraftplace",
+    description: "Mise en relation marques artisanales et boutiques engagées.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

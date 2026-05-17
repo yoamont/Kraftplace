@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Package, Loader2, ArrowLeft, ExternalLink } from 'lucide-react';
@@ -11,9 +12,9 @@ import { ContactBrandButton } from '@/components/messaging/ContactBrandButton';
 function BrandFiche({ brand }: { brand: Brand }) {
   return (
     <article className="rounded-xl border-2 border-kraft-300 bg-kraft-50 overflow-hidden shadow-sm">
-      <div className="aspect-[3/1] bg-kraft-200">
+      <div className="aspect-[3/1] bg-kraft-200 relative">
         {brand.image_url?.trim() ? (
-          <img src={brand.image_url.trim()} alt="" className="w-full h-full object-cover" />
+          <Image src={brand.image_url.trim()} alt={brand.brand_name ?? ''} fill className="object-cover" sizes="(max-width: 768px) 100vw, 896px" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-kraft-600">
             <span className="text-sm font-medium">Image de couverture</span>
@@ -22,9 +23,9 @@ function BrandFiche({ brand }: { brand: Brand }) {
       </div>
       <div className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-kraft-200 shrink-0 overflow-hidden flex items-center justify-center border-2 border-kraft-300">
+          <div className="w-14 h-14 rounded-full bg-kraft-200 shrink-0 overflow-hidden flex items-center justify-center border-2 border-kraft-300 relative">
             {brand.avatar_url?.trim() ? (
-              <img src={brand.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
+              <Image src={brand.avatar_url.trim()} alt={brand.brand_name ?? ''} fill className="object-cover" sizes="56px" />
             ) : (
               <Package className="h-6 w-6 text-kraft-600" />
             )}
@@ -116,7 +117,7 @@ export default function MarqueCollectionPage() {
       <div className="min-h-screen bg-kraft-50 flex flex-col items-center justify-center px-4">
         <p className="text-kraft-700 font-medium">Marque introuvable.</p>
         <Link href="/" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-kraft-black hover:underline">
-          <ArrowLeft className="h-4 w-4" /> Retour à l’accueil
+          <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
         </Link>
       </div>
     );
@@ -149,9 +150,9 @@ export default function MarqueCollectionPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {products.map((p) => (
                 <article key={p.id} className="rounded-xl border-2 border-kraft-300 bg-kraft-50 overflow-hidden">
-                  <div className="aspect-square bg-kraft-200">
+                  <div className="aspect-square bg-kraft-200 relative">
                     {p.image_url?.trim() ? (
-                      <img src={p.image_url.trim()} alt="" className="w-full h-full object-cover" />
+                      <Image src={p.image_url.trim()} alt={p.product_name ?? ''} fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="h-10 w-10 text-kraft-500" />

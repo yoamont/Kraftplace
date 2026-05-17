@@ -4,13 +4,13 @@ import type { NextConfig } from "next";
  * Redirection www → non-www (301) : voir middleware.ts
  */
 const nextConfig: NextConfig = {
-  env: {
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
+  /* NB : SUPABASE_SERVICE_ROLE_KEY est accessible via process.env dans les API routes serveur.
+     Ne PAS l exposer ici (env: {}) car cela la rendrait accessible cote client. */
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.mellowparis.com', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.shopify.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'krbphncxtettlslhkiqa.supabase.co', pathname: '/storage/**' },
     ],
   },
   async headers() {
