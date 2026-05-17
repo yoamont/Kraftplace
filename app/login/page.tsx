@@ -2,11 +2,10 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const [email, setEmail] = useState('');
@@ -19,13 +18,22 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const form = e.target as HTMLFormElement;
+      const formEmail = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+      const formPassword = (form.elements.namedItem('password') as HTMLInputElement).value;
+      if (!formEmail || !formPassword) {
+        setError('Veuillez remplir tous les champs.');
+        return;
+      }
+      const { error: err } = await supabase.auth.signInWithPassword({ email: formEmail, password: formPassword });
       if (err) {
         setError(err.message);
         return;
       }
       const next = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/admin';
-      router.push(next);
+      window.location.href = next;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur de connexion. Réessayez.');
     } finally {
       setLoading(false);
     }

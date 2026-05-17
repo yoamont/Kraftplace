@@ -23,6 +23,8 @@ export default function ForgotPasswordPage() {
         return;
       }
       setSent(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur réseau. Réessayez.');
     } finally {
       setLoading(false);
     }
