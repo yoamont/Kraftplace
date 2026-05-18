@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { Package, Store, ArrowRight } from 'lucide-react';
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
   let score = 0;
@@ -50,6 +51,58 @@ function SignupContent() {
     }
   }
 
+  // If no type selected, show role picker
+  if (!type) {
+    return (
+      <div className="min-h-screen bg-[#FBFBFD] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <Link href="/" className="inline-block text-neutral-900 font-semibold kraftplace-wordmark text-lg mb-8">
+            Kraftplace
+          </Link>
+          <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Créer un compte</h1>
+          <p className="mt-1 text-sm text-neutral-500">Vous êtes…</p>
+
+          <div className="mt-6 grid gap-3">
+            <Link
+              href="/signup?type=brand"
+              className="group flex items-center gap-4 p-5 rounded-2xl border border-black/[0.06] bg-white hover:border-neutral-900/20 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                <Package className="h-6 w-6 text-emerald-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-neutral-900 text-[15px]">Une marque</p>
+                <p className="text-sm text-neutral-500 mt-0.5">Je veux exposer mes produits dans des boutiques partenaires.</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-neutral-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+
+            <Link
+              href="/signup?type=showroom"
+              className="group flex items-center gap-4 p-5 rounded-2xl border border-black/[0.06] bg-white hover:border-neutral-900/20 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all"
+            >
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <Store className="h-6 w-6 text-amber-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-neutral-900 text-[15px]">Une boutique</p>
+                <p className="text-sm text-neutral-500 mt-0.5">Je veux accueillir des marques artisanales dans mon espace.</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-neutral-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+          </div>
+
+          <p className="mt-6 text-center text-sm text-neutral-500">
+            Déjà un compte ?{' '}
+            <Link href="/login" className="font-bold text-neutral-900 hover:underline">
+              Se connecter
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -58,7 +111,7 @@ function SignupContent() {
         </Link>
         <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Créer un compte</h1>
         <p className="mt-0.5 text-sm font-light text-neutral-500">
-          {type === 'brand' ? 'Marque' : type === 'showroom' ? 'Boutique' : 'Rejoignez Kraftplace'}
+          {type === 'brand' ? 'Inscription marque' : 'Inscription boutique'}
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
@@ -106,12 +159,17 @@ function SignupContent() {
             {loading ? 'Création…' : 'Créer mon compte'}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-kraft-700">
-          Déjà un compte ?{' '}
-          <Link href="/login" className="font-bold text-kraft-black hover:underline">
-            Se connecter
+        <div className="mt-6 flex flex-col items-center gap-2 text-sm">
+          <Link href="/signup" className="text-neutral-500 hover:text-neutral-700 hover:underline">
+            ← Changer de profil
           </Link>
-        </p>
+          <p className="text-neutral-500">
+            Déjà un compte ?{' '}
+            <Link href="/login" className="font-bold text-neutral-900 hover:underline">
+              Se connecter
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

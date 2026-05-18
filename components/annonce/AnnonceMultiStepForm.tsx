@@ -311,14 +311,7 @@ export function AnnonceMultiStepForm({ data, listingId }: { data: PublicListingD
       setCreateBrandError('La description de la marque est obligatoire.');
       return;
     }
-    if (!newBrandInstagram?.trim()) {
-      setCreateBrandError('Le compte Instagram est obligatoire.');
-      return;
-    }
-    if (!newBrandWebsite?.trim()) {
-      setCreateBrandError('L\'URL du site web est obligatoire.');
-      return;
-    }
+    // Instagram et site web sont optionnels
     setCreateBrandError(null);
 
     if (!user) {
@@ -698,8 +691,49 @@ export function AnnonceMultiStepForm({ data, listingId }: { data: PublicListingD
     );
   }
 
+  // Progress bar: map steps to 4 phases
+  const stepPhase: Record<Step, number> = {
+    landing: 0,
+    login_required: 1, signup_required: 1, signup_to_send: 1,
+    choose_marque: 2, create_marque: 2, profile_siret: 2, profile_full: 2, profile_catalogue: 2,
+    send: 3, submitting: 3,
+  };
+  const phaseLabels = ['Découvrir', 'Compte', 'Profil', 'Candidater'];
+  const currentPhase = stepPhase[step];
+
   return (
     <div className="max-w-lg mx-auto px-4 pb-16">
+      {/* Barre de progression */}
+      {step !== 'landing' && (
+        <div className="mb-6 mt-2">
+          <div className="flex items-center justify-between mb-2">
+            {phaseLabels.map((label, i) => (
+              <div key={label} className="flex flex-col items-center flex-1">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                  i < currentPhase ? 'bg-neutral-900 text-white' :
+                  i === currentPhase ? 'bg-neutral-900 text-white ring-2 ring-neutral-900/20 ring-offset-2' :
+                  'bg-neutral-200 text-neutral-500'
+                }`}>
+                  {i < currentPhase ? '✓' : i + 1}
+                </div>
+                <span className={`mt-1.5 text-[11px] font-medium ${
+                  i <= currentPhase ? 'text-neutral-900' : 'text-neutral-400'
+                }`}>{label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            {phaseLabels.map((_, i) => (
+              <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                i < currentPhase ? 'bg-neutral-900' :
+                i === currentPhase ? 'bg-neutral-400' :
+                'bg-neutral-200'
+              }`} />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={`transition-all ${transitionDuration} ${transitionClass}`}>
         {step === 'landing' && (
           <BoutiqueCard
@@ -1505,7 +1539,12 @@ export function AnnonceMultiStepForm({ data, listingId }: { data: PublicListingD
               </div>
             )}
             <div className="mt-4">
-              <label htmlFor="motivation" className="block text-sm font-medium text-neutral-700 mb-1">Message (optionnel)</label>
+              <label htmlFor="motivation" className="block text-sm font-medium text-neutral-700 mb-1">
+                Personnalisez votre message <span className="font-normal text-neutral-400">(optionnel)</span>
+              </label>
+              {brand?.description?.trim() && motivationMessage === brand.description.trim() && (
+                <p className="text-xs text-neutral-400 mb-1">Pré-rempli avec la description de votre marque. N'hésitez pas à le personnaliser.</p>
+              )}
               <textarea
                 id="motivation"
                 value={motivationMessage}

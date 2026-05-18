@@ -31,17 +31,17 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/brand-config', label: 'Marque', icon: Building2 },
     { href: '/admin/products', label: 'Catalogue', icon: Package },
-    { href: '/admin/discover', label: 'Explorer', icon: Store },
+    { href: '/admin/discover', label: 'Trouver une boutique', icon: Store },
     { href: '/admin/placements', label: 'Partenariats', icon: LayoutGrid },
-    { href: '/messages', label: 'Messagerie', icon: MessageSquare },
+    { href: '/admin/messages', label: 'Messagerie', icon: MessageSquare },
   ];
   const showroomNav = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/showroom-config', label: 'Boutique', icon: Settings },
     { href: '/admin/listings', label: 'Annonces', icon: FileText },
-    { href: '/admin/browse-brands', label: 'Marques', icon: Search },
+    { href: '/admin/browse-brands', label: 'Découvrir des marques', icon: Search },
     { href: '/admin/placements', label: 'Partenariats', icon: LayoutGrid },
-    { href: '/messages', label: 'Messagerie', icon: MessageSquare },
+    { href: '/admin/messages', label: 'Messagerie', icon: MessageSquare },
   ];
   const navItems = entityType === 'brand' ? brandNav : entityType === 'showroom' ? showroomNav : [{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard }];
 
@@ -88,7 +88,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {navItems.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href));
-              const showUnreadBubble = href === '/messages' && unreadMessagesCount > 0;
+              const showUnreadBubble = href === '/admin/messages' && unreadMessagesCount > 0;
               return (
                 <Link
                   key={href}
@@ -125,7 +125,9 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
             <button type="button" className="lg:hidden p-2 -ml-2 rounded-xl text-neutral-600 hover:bg-black/[0.06] transition-colors" onClick={() => setOpen(true)} aria-label="Menu">
               <Menu className="h-5 w-5" />
             </button>
-            <span className="ml-2 text-sm font-medium text-neutral-900">Admin</span>
+            <span className="ml-2 text-sm font-medium text-neutral-900">
+              {entityType === 'brand' && activeBrand ? activeBrand.brand_name : entityType === 'showroom' && activeShowroom ? activeShowroom.name : 'Kraftplace'}
+            </span>
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>

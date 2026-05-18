@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
               <Sparkles className="h-6 w-6 text-neutral-600" strokeWidth={1.5} />
             </div>
             <h2 className="mt-4 font-semibold text-neutral-900">Marque</h2>
-            <p className="mt-1 text-sm font-light text-neutral-500">Catalogue et sourcing.</p>
+            <p className="mt-1 text-sm font-light text-neutral-500">Exposez vos produits dans des boutiques partenaires.</p>
             <span className="mt-4 inline-flex items-center text-xs font-medium text-neutral-600">Créer <ChevronRight className="ml-0.5 h-3.5 w-3.5" strokeWidth={1.5} /></span>
           </Link>
           <Link
@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
               <Store className="h-6 w-6 text-neutral-600" strokeWidth={1.5} />
             </div>
             <h2 className="mt-4 font-semibold text-neutral-900">Boutique</h2>
-            <p className="mt-1 text-sm font-light text-neutral-500">Lieu et partenariats.</p>
+            <p className="mt-1 text-sm font-light text-neutral-500">Accueillez des marques artisanales dans votre espace.</p>
             <span className="mt-4 inline-flex items-center text-xs font-medium text-neutral-600">Créer <ChevronRight className="ml-0.5 h-3.5 w-3.5" strokeWidth={1.5} /></span>
           </Link>
         </div>
@@ -59,7 +59,7 @@ export default function AdminDashboardPage() {
         {isBrand ? activeBrand.brand_name : isShowroom ? activeShowroom.name : 'Dashboard'}
       </h1>
       <p className="mt-0.5 text-sm font-light text-neutral-500">
-        {isBrand ? 'Catalogue et explorer.' : isShowroom ? 'Annonces et partenariats.' : 'Sélectionnez une entité.'}
+        {isBrand ? 'Gérez votre catalogue et trouvez des boutiques.' : isShowroom ? 'Gérez vos annonces et partenariats.' : 'Sélectionnez une entité.'}
       </p>
       {isBrand && (
         <div className="mt-4">
@@ -98,8 +98,8 @@ export default function AdminDashboardPage() {
             <Link href="/admin/discover" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><Store className={iconClass} strokeWidth={1.5} /></div>
               <div className="min-w-0 flex-1">
-                <span className="font-medium text-neutral-900">Explorer</span>
-                <p className="text-xs font-light text-neutral-500 mt-0.5">Boutiques et candidatures</p>
+                <span className="font-medium text-neutral-900">Trouver une boutique</span>
+                <p className="text-xs font-light text-neutral-500 mt-0.5">Parcourir les boutiques et candidater</p>
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
-            <Link href="/messages" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+            <Link href="/admin/messages" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><MessageSquare className={iconClass} strokeWidth={1.5} /></div>
               <div className="min-w-0 flex-1">
                 <span className="font-medium text-neutral-900">Messagerie</span>
@@ -142,8 +142,8 @@ export default function AdminDashboardPage() {
             <Link href="/admin/browse-brands" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><Search className={iconClass} strokeWidth={1.5} /></div>
               <div className="min-w-0 flex-1">
-                <span className="font-medium text-neutral-900">Marques</span>
-                <p className="text-xs font-light text-neutral-500 mt-0.5">Créateurs et catalogues</p>
+                <span className="font-medium text-neutral-900">Découvrir des marques</span>
+                <p className="text-xs font-light text-neutral-500 mt-0.5">Parcourir les marques artisanales</p>
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 shrink-0" strokeWidth={1.5} />
             </Link>
-            <Link href="/messages" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+            <Link href="/admin/messages" className="flex items-center gap-4 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow duration-200">
               <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><MessageSquare className={iconClass} strokeWidth={1.5} /></div>
               <div className="min-w-0 flex-1">
                 <span className="font-medium text-neutral-900">Messagerie</span>

@@ -777,16 +777,16 @@ export default function DiscoverPage() {
           <div className="fixed inset-0 bg-black/40 z-40" aria-hidden onClick={() => setShowSlotsFullModal(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 pointer-events-auto space-y-4">
-              <h3 className="text-lg font-semibold text-neutral-900">Slots de candidature complets</h3>
+              <h3 className="text-lg font-semibold text-neutral-900">Places de candidature complètes</h3>
               <p className="text-sm text-neutral-600 leading-relaxed">
-                Vos slots de candidature sont pleins. Libérez-en un ou augmentez votre capacité pour continuer.
+                Vous avez atteint le nombre maximum de candidatures en attente. Attendez qu'une boutique réponde ou annulez une candidature existante pour libérer une place.
               </p>
               <div className="flex gap-3 pt-2">
                 <Link
-                  href="/messages"
+                  href="/admin/placements"
                   className="flex-1 text-center py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50"
                 >
-                  Voir mes conversations
+                  Voir mes candidatures
                 </Link>
                 <button
                   type="button"
@@ -817,15 +817,17 @@ export default function DiscoverPage() {
                 Envoyer ma candidature à {confirmModalRow.showroom.name}
               </h3>
               <p className="text-sm text-neutral-600 leading-relaxed">
-                Cette action utilise 1 crédit. Votre crédit ne sera débité que si la boutique accepte votre demande et ouvre la messagerie. En attendant, ce crédit sera « réservé ».
+                1 crédit sera réservé immédiatement. Si la boutique accepte, il est définitivement débité. Si elle refuse, il vous est restitué.
               </p>
-              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4 space-y-1">
-                <p className="text-sm text-neutral-700">
-                  Votre solde : <span className="font-semibold">{credits} ✨</span>
-                </p>
-                <p className="text-sm text-neutral-700">
-                  Solde après validation : <span className="font-semibold">{credits - 1} ✨</span>
-                </p>
+              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4 space-y-2">
+                <div className="flex justify-between text-sm text-neutral-700">
+                  <span>Solde actuel</span>
+                  <span className="font-semibold">{credits} crédit{credits !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex justify-between text-sm text-neutral-700">
+                  <span>Après réservation</span>
+                  <span className="font-semibold">{credits - 1} disponible{credits - 1 !== 1 ? 's' : ''}</span>
+                </div>
               </div>
               <div className="flex gap-3 pt-1">
                 <button

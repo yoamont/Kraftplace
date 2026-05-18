@@ -41,15 +41,36 @@ export default function CreditsPage() {
   }
 
   const credits = activeBrand?.credits ?? 0;
+  const reserved = activeBrand?.reserved_credits ?? 0;
+  const available = credits - reserved;
 
   return (
     <div className="max-w-2xl">
       <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Crédits</h1>
-      <p className="mt-0.5 text-sm font-light text-neutral-500 mb-6">Packs pour candidater.</p>
+      <p className="mt-0.5 text-sm font-light text-neutral-500 mb-6">Envoyez des candidatures aux boutiques.</p>
+
+      {/* Encart explicatif */}
+      <div className="mb-6 p-4 rounded-[12px] bg-emerald-50 border border-emerald-100">
+        <p className="text-sm text-emerald-900 font-medium mb-1">Comment fonctionnent les crédits ?</p>
+        <p className="text-sm text-emerald-800 leading-relaxed">
+          1 crédit = 1 candidature envoyée à une boutique. Le crédit est réservé à l'envoi de votre candidature.
+          Si la boutique refuse, il vous est restitué. Si elle accepte, il est définitivement débité.
+        </p>
+      </div>
 
       <div className="mb-8 p-4 rounded-[12px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <p className="text-xs font-medium text-neutral-500">Solde actuel</p>
-        <p className="text-xl font-semibold text-neutral-900 mt-0.5">{credits} crédit{credits !== 1 ? 's' : ''}</p>
+        <div className="flex items-baseline justify-between">
+          <div>
+            <p className="text-xs font-medium text-neutral-500">Disponibles</p>
+            <p className="text-xl font-semibold text-neutral-900 mt-0.5">{available} crédit{available !== 1 ? 's' : ''}</p>
+          </div>
+          {reserved > 0 && (
+            <div className="text-right">
+              <p className="text-xs font-medium text-neutral-400">Réservés (candidatures en attente)</p>
+              <p className="text-base font-medium text-neutral-500 mt-0.5">{reserved}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
