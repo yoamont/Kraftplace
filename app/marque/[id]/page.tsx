@@ -6,6 +6,7 @@ import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import type { Brand, Product, Badge } from '@/lib/supabase';
+import { ShareButton } from '@/components/public/ShareButton';
 import type { Metadata } from 'next';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -161,6 +162,15 @@ export default async function MarquePage({ params }: Props) {
 
         <div className="mt-4">
           <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">{brand.brand_name}</h1>
+
+          {/* Partager */}
+          <div className="mt-3">
+            <ShareButton
+              title={`${brand.brand_name} — Marque sur Kraftplace`}
+              text={`Découvrez ${brand.brand_name} sur Kraftplace`}
+              url={`https://kraftplace.fr/marque/${numId}`}
+            />
+          </div>
 
           {/* Badges */}
           {badges.length > 0 && (

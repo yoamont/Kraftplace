@@ -6,6 +6,7 @@ import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
+import { ShareButton } from '@/components/public/ShareButton';
 import type { Metadata } from 'next';
 
 // Server-side Supabase client (no cookie needed — public data only)
@@ -204,6 +205,15 @@ export default async function BoutiquePage({ params }: Props) {
               {showroom.code_postal?.trim() && <span className="text-neutral-400">({showroom.code_postal.trim()})</span>}
             </p>
           )}
+
+          {/* Partager */}
+          <div className="mt-4">
+            <ShareButton
+              title={`${showroom.name} — Boutique sur Kraftplace`}
+              text={`Découvrez ${showroom.name}${cityLabel ? ` à ${cityLabel}` : ''} sur Kraftplace`}
+              url={`https://kraftplace.fr/boutique/${numId}`}
+            />
+          </div>
 
           {/* Badges */}
           {badges.length > 0 && (
