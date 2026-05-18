@@ -16,6 +16,24 @@ const key = supabaseAnonKey || 'placeholder';
 
 export const supabase: SupabaseClient = createClient(url, key);
 
+// ── Cookie sync : rend la session visible au middleware Next.js ──
+// Le middleware vérifie la présence d'un cookie *-auth-token pour protéger /admin.
+// createClient stocke la session en localStorage (pas en cookie), donc on synchronise.
+if (typeof window !== 'undefined' && !isPlaceholder) {
+  const projectRef = url.match(/https:\/\/([^.]+)\./)?.[1] ?? 'sb';
+  const cookieName = `sb-${projectRef}-auth-token`;
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.access_token) {
+      // Cookie HttpOnly=false pour que le middleware puisse le lire via request.cookies
+      document.cookie = `${cookieName}=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; Secure`;
+    } else {
+      // Suppression du cookie à la déconnexion
+      document.cookie = `${cookieName}=; path=/; max-age=0; SameSite=Lax; Secure`;
+    }
+  });
+}
+
 // --- Types alignés sur tables.supabase ---
 
 export type Brand = {
@@ -231,7 +249,7 @@ export type Message = {
 /** Type de message dans un fil candidature : user ou message système */
 export type CandidatureMessageType = 'user' | 'system_offer_sent' | 'system_offer_accepted' | 'system_status_update';
 
-/** Message d’un fil candidature (table messages avec candidature_id, type, metadata) */
+/** Message d'un fil candidature (table messages avec candidature_id, type, metadata) */
 export type CandidatureThreadMessage = {
   id: string;
   candidature_id: string | null;
@@ -246,6 +264,6 @@ export type CandidatureThreadMessage = {
   metadata: Record<string, unknown> | null;
 };
 
-// Table notifications supprimée de l’UX (voir archive SQL si besoin). Plus de type exporté.
+// Table notifications supprimée de l'UX (voir archive SQL si besoin). Plus de type exporté.
 
 // Paiements (flux marketplace) - désactivés, types retirés.
