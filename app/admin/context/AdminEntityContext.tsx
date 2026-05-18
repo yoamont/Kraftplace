@@ -18,6 +18,8 @@ export type EntityType = 'brand' | 'showroom';
 export type AdminEntityState = {
   brands: Brand[];
   showrooms: Showroom[];
+  /** Role determined at first load — immutable for the session. Brand takes precedence if both exist (legacy). */
+  accountRole: EntityType | null;
   entityType: EntityType | null;
   entityId: number | null;
   loading: boolean;
@@ -29,6 +31,8 @@ type AdminEntityContextValue = AdminEntityState & {
   activeBrand: Brand | null;
   activeShowroom: Showroom | null;
   refresh: () => Promise<void>;
+  /** Entities relevant to the account role (brands if brand account, showrooms if showroom account) */
+  ownedEntities: Brand[] | Showroom[];
 };
 
 const AdminEntityContext = createContext<AdminEntityContextValue | null>(null);
@@ -38,6 +42,7 @@ export function AdminEntityProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AdminEntityState>({
     brands: [],
     showrooms: [],
+    accountRole: null,
     entityType: null,
     entityId: null,
     loading: true,
@@ -47,7 +52,7 @@ export function AdminEntityProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setState((s) => ({ ...s, brands: [], showrooms: [], entityType: null, entityId: null, loading: false, userId: null }));
+      setState((s) => ({ ...s, brands: [], showrooms: [], accountRole: null, entityType: null, entityId: null, loading: false, userId: null }));
       return;
     }
 
@@ -59,46 +64,49 @@ export function AdminEntityProvider({ children }: { children: ReactNode }) {
     const brands = (brandsRes.data as Brand[] | null) ?? [];
     const showrooms = (showroomsRes.data as Showroom[] | null) ?? [];
 
+    // accountRole is set once: brands take precedence if both exist (legacy mixed account).
+    const accountRole: EntityType | null = brands.length > 0 ? 'brand' : showrooms.length > 0 ? 'showroom' : null;
+
+    // Only expose entities matching the account role.
+    const roleEntities = accountRole === 'brand' ? brands : accountRole === 'showroom' ? showrooms : [];
+
     setState((s) => {
-      let entityType = s.entityType;
-      let entityId = s.entityId;
+      let entityType = accountRole;
+      let entityId: number | null = null;
+
       const urlBrand = searchParams.get('brand');
       const urlShowroom = searchParams.get('showroom');
-      if (urlBrand) {
+
+      if (accountRole === 'brand' && urlBrand) {
         const id = parseInt(urlBrand, 10);
-        if (!Number.isNaN(id) && brands.some((b) => b.id === id)) {
-          entityType = 'brand';
-          entityId = id;
-        }
+        if (!Number.isNaN(id) && brands.some((b) => b.id === id)) entityId = id;
       }
-      if (urlShowroom) {
+      if (accountRole === 'showroom' && urlShowroom) {
         const id = parseInt(urlShowroom, 10);
-        if (!Number.isNaN(id) && showrooms.some((sh) => sh.id === id)) {
-          entityType = 'showroom';
-          entityId = id;
-        }
+        if (!Number.isNaN(id) && showrooms.some((sh) => sh.id === id)) entityId = id;
       }
-      if (entityType == null || entityId == null) {
-        if (brands.length > 0) {
-          entityType = 'brand';
-          entityId = brands[0].id;
-        } else if (showrooms.length > 0) {
-          entityType = 'showroom';
-          entityId = showrooms[0].id;
-        } else {
-          entityType = null;
-          entityId = null;
-        }
+
+      // Restore previous selection if still valid
+      if (entityId == null && s.entityId != null && s.entityType === accountRole) {
+        const stillValid = accountRole === 'brand'
+          ? brands.some((b) => b.id === s.entityId)
+          : showrooms.some((sh) => sh.id === s.entityId);
+        if (stillValid) entityId = s.entityId;
       }
-      if (entityType === 'brand' && entityId != null && !brands.some((b) => b.id === entityId)) {
-        entityType = brands.length > 0 ? 'brand' : showrooms.length > 0 ? 'showroom' : null;
-        entityId = brands.length > 0 ? brands[0].id : showrooms.length > 0 ? showrooms[0].id : null;
-      }
-      if (entityType === 'showroom' && entityId != null && !showrooms.some((sh) => sh.id === entityId)) {
-        entityType = brands.length > 0 ? 'brand' : showrooms.length > 0 ? 'showroom' : null;
-        entityId = brands.length > 0 ? brands[0].id : showrooms.length > 0 ? showrooms[0].id : null;
-      }
-      return { ...s, brands, showrooms, entityType, entityId, loading: false, userId: user.id };
+
+      // Default to first entity
+      if (entityId == null && roleEntities.length > 0) entityId = roleEntities[0].id;
+
+      return {
+        ...s,
+        brands: accountRole === 'brand' ? brands : [],
+        showrooms: accountRole === 'showroom' ? showrooms : [],
+        accountRole,
+        entityType,
+        entityId,
+        loading: false,
+        userId: user.id,
+      };
     });
   }, [searchParams]);
 
@@ -120,9 +128,14 @@ export function AdminEntityProvider({ children }: { children: ReactNode }) {
     [state.entityType, state.entityId, state.showrooms]
   );
 
+  const ownedEntities = useMemo(
+    () => (state.accountRole === 'brand' ? state.brands : state.accountRole === 'showroom' ? state.showrooms : []),
+    [state.accountRole, state.brands, state.showrooms]
+  );
+
   const value = useMemo(
-    () => ({ ...state, setEntity, activeBrand, activeShowroom, refresh: load }),
-    [state, setEntity, activeBrand, activeShowroom, load]
+    () => ({ ...state, setEntity, activeBrand, activeShowroom, refresh: load, ownedEntities }),
+    [state, setEntity, activeBrand, activeShowroom, load, ownedEntities]
   );
 
   return <AdminEntityContext.Provider value={value}>{children}</AdminEntityContext.Provider>;

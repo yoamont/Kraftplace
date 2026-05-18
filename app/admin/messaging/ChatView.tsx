@@ -201,7 +201,7 @@ export function ChatView({
         <p className="ml-2 md:ml-3 font-semibold text-neutral-900 truncate flex-1 min-w-0">{otherUserName}</p>
       </header>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6 bg-white min-h-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-2 bg-neutral-50 min-h-0">
         {error && (
           <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800 flex items-center justify-between gap-2">
             <span>{error}</span>
@@ -223,7 +223,10 @@ export function ChatView({
           </div>
         ) : (
           messages.map((m) => {
-            const isMe = m.sender_id != null && currentUserId != null && m.sender_id === currentUserId;
+            // Prefer sender_role to handle same-user brand+boutique accounts
+            const isMe = m.sender_role != null && senderRole != null
+              ? m.sender_role === senderRole
+              : m.sender_id != null && currentUserId != null && m.sender_id === currentUserId;
             const conversationAccepted = messages.some(
               (x) => x.type === 'CANDIDATURE_ACCEPTED' || x.type === 'DEAL_ACCEPTED'
             );

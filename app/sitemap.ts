@@ -13,30 +13,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/mentions-legales`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.1 },
   ];
 
-  // Pages dynamiques : annonces publiées
   const dynamicPages: MetadataRoute.Sitemap = [];
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
-    const { data: listings } = await supabase
-      .from('listings')
-      .select('slug, updated_at')
-      .eq('status', 'published')
-      .order('updated_at', { ascending: false });
 
-    if (listings) {
-      for (const listing of listings) {
-        if (listing.slug) {
-          dynamicPages.push({
-            url: `${BASE_URL}/annonce/${listing.slug}`,
-            lastModified: listing.updated_at ? new Date(listing.updated_at) : new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        }
+    const [{ data: listings }, { data: brands }, { data: showrooms }] = await Promise.all([
+      supabase.from('listings').select('slug, updated_at').eq('status', 'published').order('updated_at', { ascending: false }),
+      supabase.from('brands').select('id, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('showrooms').select('id, updated_at').eq('publication_status', 'published').order('updated_at', { ascending: false }),
+    ]);
+
+    for (const listing of listings ?? []) {
+      if (listing.slug) {
+        dynamicPages.push({
+          url: `${BASE_URL}/annonce/${listing.slug}`,
+          lastModified: listing.updated_at ? new Date(listing.updated_at) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
       }
+    }
+
+    for (const brand of brands ?? []) {
+      dynamicPages.push({
+        url: `${BASE_URL}/marque/${brand.id}`,
+        lastModified: brand.updated_at ? new Date(brand.updated_at) : new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
+    }
+
+    for (const showroom of showrooms ?? []) {
+      dynamicPages.push({
+        url: `${BASE_URL}/boutique/${showroom.id}`,
+        lastModified: showroom.updated_at ? new Date(showroom.updated_at) : new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
     }
   } catch {
     // Silently fail — static pages are still returned

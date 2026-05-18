@@ -23,13 +23,19 @@ if (typeof window !== 'undefined' && !isPlaceholder) {
   const projectRef = url.match(/https:\/\/([^.]+)\./)?.[1] ?? 'sb';
   const cookieName = `sb-${projectRef}-auth-token`;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     if (session?.access_token) {
       // Cookie HttpOnly=false pour que le middleware puisse le lire via request.cookies
       document.cookie = `${cookieName}=${session.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; Secure`;
     } else {
-      // Suppression du cookie à la déconnexion
+      // Suppression du cookie à la déconnexion ou en cas de refresh token invalide
       document.cookie = `${cookieName}=; path=/; max-age=0; SameSite=Lax; Secure`;
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        // Nettoie les résidus localStorage de sessions invalides
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith('sb-'))
+          .forEach((k) => localStorage.removeItem(k));
+      }
     }
   });
 }

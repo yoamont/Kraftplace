@@ -11,7 +11,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const type = searchParams.get('type') as 'brand' | 'showroom' | null;
-  const { userId, refresh } = useAdminEntity();
+  const { userId, accountRole, refresh } = useAdminEntity();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submittingRef = useRef(false);
@@ -33,6 +33,9 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (type !== 'brand' && type !== 'showroom') router.replace('/admin');
   }, [type, router]);
+
+  // Block if the account already has a different role
+  const roleConflict = accountRole != null && type != null && accountRole !== type;
 
   async function handleCreateBrand(e: React.FormEvent) {
     e.preventDefault();
@@ -115,6 +118,29 @@ export default function OnboardingPage() {
   }
 
   const isBrand = type === 'brand';
+
+  if (roleConflict) {
+    const existingLabel = accountRole === 'brand' ? 'marque' : 'boutique';
+    const wantedLabel = type === 'brand' ? 'une marque' : 'une boutique';
+    return (
+      <div className="max-w-md mx-auto mt-12 text-center">
+        <div className="rounded-2xl bg-white border border-black/[0.06] p-8 shadow-sm">
+          <p className="text-2xl mb-4">⚠️</p>
+          <h1 className="text-lg font-semibold text-neutral-900">Compte {existingLabel} existant</h1>
+          <p className="mt-3 text-sm text-neutral-500 leading-relaxed">
+            Votre compte est déjà un <strong>espace {existingLabel}</strong>.
+            Pour créer {wantedLabel}, vous devez vous inscrire avec une adresse email différente.
+          </p>
+          <Link
+            href="/admin"
+            className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
+          >
+            Retour à mon espace
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto">

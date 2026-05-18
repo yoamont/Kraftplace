@@ -16,7 +16,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { userId, entityType, brands, showrooms, loading, activeBrand, activeShowroom } = useAdminEntity();
+  const { userId, entityType, accountRole, brands, showrooms, loading, activeBrand, activeShowroom } = useAdminEntity();
   const { unreadCount: unreadMessagesCount } = useUnreadMessagesCount(userId, activeBrand ?? null, activeShowroom ?? null);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/brand-config', label: 'Marque', icon: Building2 },
     { href: '/admin/products', label: 'Catalogue', icon: Package },
-    { href: '/admin/discover', label: 'Trouver une boutique', icon: Store },
+    { href: '/admin/boutiques', label: 'Trouver une boutique', icon: Store },
     { href: '/admin/placements', label: 'Partenariats', icon: LayoutGrid },
     { href: '/admin/messages', label: 'Messagerie', icon: MessageSquare },
   ];
@@ -39,7 +39,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/showroom-config', label: 'Boutique', icon: Settings },
     { href: '/admin/listings', label: 'Annonces', icon: FileText },
-    { href: '/admin/browse-brands', label: 'Découvrir des marques', icon: Search },
+    { href: '/admin/marques', label: 'Découvrir des marques', icon: Search },
     { href: '/admin/placements', label: 'Partenariats', icon: LayoutGrid },
     { href: '/admin/messages', label: 'Messagerie', icon: MessageSquare },
   ];
@@ -77,6 +77,11 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
             <Link href="/" className="flex items-center gap-2">
               <span className="font-semibold text-neutral-900 tracking-tight kraftplace-wordmark text-lg">Kraftplace</span>
             </Link>
+            {accountRole && (
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                {accountRole === 'brand' ? 'Espace Marque' : 'Espace Boutique'}
+              </p>
+            )}
             <div className="mt-3">
               <EntitySelector />
             </div>

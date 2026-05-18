@@ -9,14 +9,12 @@ export type PublicBrandCardProps = {
   brand: Pick<Brand, 'id' | 'brand_name' | 'description' | 'avatar_url' | 'image_url'>;
   products?: Product[];
   badges?: Badge[];
+  actions?: React.ReactNode;
 };
 
-export function PublicBrandCard({ brand, products = [], badges = [] }: PublicBrandCardProps) {
-  return (
-    <Link
-      href={`/marque/${brand.id}`}
-      className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col"
-    >
+export function PublicBrandCard({ brand, products = [], badges = [], actions }: PublicBrandCardProps) {
+  const inner = (
+    <>
       <div className="aspect-[3/1] bg-neutral-100 relative overflow-hidden">
         {brand.image_url?.trim() ? (
           <img
@@ -67,16 +65,9 @@ export function PublicBrandCard({ brand, products = [], badges = [] }: PublicBra
         {products.length > 0 && (
           <div className="mt-3 flex gap-1.5">
             {products.slice(0, 3).map((product) => (
-              <div
-                key={product.id}
-                className="flex-1 aspect-square rounded-lg bg-neutral-100 overflow-hidden"
-              >
+              <div key={product.id} className="flex-1 aspect-square rounded-lg bg-neutral-100 overflow-hidden">
                 {product.image_url?.trim() ? (
-                  <img
-                    src={product.image_url.trim()}
-                    alt={product.product_name ?? ''}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={product.image_url.trim()} alt={product.product_name ?? ''} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Package className="h-5 w-5 text-neutral-300" />
@@ -87,13 +78,35 @@ export function PublicBrandCard({ brand, products = [], badges = [] }: PublicBra
           </div>
         )}
 
-        <div className="mt-auto pt-3">
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-neutral-700 group-hover:text-neutral-900 transition-colors">
-            Voir la marque
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </span>
-        </div>
+        {!actions && (
+          <div className="mt-auto pt-3">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-neutral-700 group-hover:text-neutral-900 transition-colors">
+              Voir la marque
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </div>
+        )}
       </div>
+    </>
+  );
+
+  if (actions) {
+    return (
+      <div className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col">
+        <Link href={`/marque/${brand.id}`} className="flex flex-col flex-1">
+          {inner}
+        </Link>
+        <div className="px-4 pb-4">{actions}</div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/marque/${brand.id}`}
+      className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col"
+    >
+      {inner}
     </Link>
   );
 }

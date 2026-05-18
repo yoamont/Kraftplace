@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal, X, Loader2, Package, MessageSquare, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { LandingHeader } from '@/components/landing/LandingHeader';
-import { LandingFooter } from '@/components/landing/LandingFooter';
 import { BrandCard } from '@/app/admin/components/cards/BrandCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 import type { Brand, Product, Badge, Showroom } from '@/lib/supabase';
 
-export default function MarquesGaleriePage() {
+export default function AdminMarquesPage() {
   const router = useRouter();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [productsByBrandId, setProductsByBrandId] = useState<Record<number, Product[]>>({});
@@ -122,20 +120,11 @@ export default function MarquesGaleriePage() {
   const hasActiveFilters = searchQuery.trim() !== '' || selectedBadgeIds.size > 0;
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-      <LandingHeader />
+    <div className="-mx-4 -my-4 lg:-mx-6 lg:-my-6 flex flex-col min-h-full">
 
-      <section className="px-4 pt-12 pb-8 sm:pt-16 sm:pb-10 text-center border-b border-black/[0.06]">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight">
-          Nos marques partenaires
-        </h1>
-        <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-lg mx-auto">
-          Découvrez les marques artisanales et éthiques présentes sur Kraftplace.
-        </p>
-      </section>
-
-      <section className="sticky top-[calc(2.25rem+57px)] z-40 bg-[#FBFBFD]/95 backdrop-blur-md border-b border-black/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 py-3">
+      {/* Barre de filtres sticky */}
+      <div className="sticky top-[calc(2.25rem+3.5rem)] z-20 bg-[#FBFBFD]/95 backdrop-blur-md border-b border-black/[0.06]">
+        <div className="px-4 lg:px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -185,9 +174,10 @@ export default function MarquesGaleriePage() {
             </div>
           )}
         </div>
-      </section>
+      </div>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      {/* Grille */}
+      <div className="flex-1 px-4 lg:px-6 py-6">
         {loading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
@@ -205,7 +195,7 @@ export default function MarquesGaleriePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredBrands.map((brand) => (
               <BrandCard
                 key={brand.id}
@@ -245,9 +235,7 @@ export default function MarquesGaleriePage() {
             ))}
           </div>
         )}
-      </main>
-
-      <LandingFooter />
+      </div>
     </div>
   );
 }

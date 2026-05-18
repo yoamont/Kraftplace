@@ -4,11 +4,12 @@ import { useRef, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { Sparkles, Store, ChevronDown } from 'lucide-react';
+import type { Brand, Showroom } from '@/lib/supabase';
 
 export function EntitySelector() {
   const router = useRouter();
   const pathname = usePathname();
-  const { brands, showrooms, entityType, entityId, setEntity, activeBrand, activeShowroom, loading } = useAdminEntity();
+  const { accountRole, entityId, setEntity, activeBrand, activeShowroom, loading, ownedEntities } = useAdminEntity();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -20,92 +21,88 @@ export function EntitySelector() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const label =
-    entityType === 'brand' && activeBrand
-      ? activeBrand.brand_name
-      : entityType === 'showroom' && activeShowroom
-        ? activeShowroom.name
-        : 'Choisir une entité';
+  const activeEntity = accountRole === 'brand' ? activeBrand : activeShowroom;
+  const activeLabel = activeEntity
+    ? (accountRole === 'brand' ? (activeEntity as Brand).brand_name : (activeEntity as Showroom).name)
+    : 'Choisir';
+  const activeAvatar = activeEntity?.avatar_url?.trim() ?? null;
 
-  const handleSelect = (type: 'brand' | 'showroom', id: number) => {
-    setEntity(type, id);
+  const handleSelect = (id: number) => {
+    setEntity(accountRole, id);
     const params = new URLSearchParams();
-    if (type === 'brand') params.set('brand', String(id));
+    if (accountRole === 'brand') params.set('brand', String(id));
     else params.set('showroom', String(id));
     router.replace(`${pathname || '/admin'}?${params.toString()}`, { scroll: false });
     setOpen(false);
   };
 
   if (loading) {
-    return <div className="h-10 w-full max-w-full md:max-w-[200px] rounded-lg bg-kraft-100 animate-pulse" />;
+    return <div className="h-10 w-full rounded-lg bg-neutral-100 animate-pulse" />;
   }
 
-  if (brands.length === 0 && showrooms.length === 0) {
-    return <div className="text-sm text-kraft-500">Aucune entité</div>;
+  if (ownedEntities.length === 0) return null;
+
+  // If only one entity, show a simple non-clickable label
+  if (ownedEntities.length === 1) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral-50 border border-black/[0.06]">
+        {activeAvatar ? (
+          <img src={activeAvatar} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+        ) : accountRole === 'brand' ? (
+          <Sparkles className="h-4 w-4 text-neutral-500 shrink-0" strokeWidth={1.5} />
+        ) : (
+          <Store className="h-4 w-4 text-neutral-500 shrink-0" strokeWidth={1.5} />
+        )}
+        <span className="text-sm font-medium text-neutral-800 truncate">{activeLabel}</span>
+      </div>
+    );
   }
 
+  // Multiple entities of the same role → dropdown
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded-lg border-2 border-kraft-300 bg-kraft-50 hover:bg-kraft-100 text-left text-sm font-semibold text-kraft-black touch-manipulation"
+        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-black/[0.06] bg-neutral-50 hover:bg-neutral-100 text-left text-sm font-medium text-neutral-800 transition-colors"
         aria-expanded={open}
       >
-        {entityType === 'brand' && activeBrand?.avatar_url?.trim() ? (
-          <img src={activeBrand.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />
-        ) : entityType === 'showroom' && activeShowroom?.avatar_url?.trim() ? (
-          <img src={activeShowroom.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />
-        ) : entityType === 'brand' ? (
-          <Sparkles className="h-4 w-4 text-kraft-500 shrink-0" />
+        {activeAvatar ? (
+          <img src={activeAvatar} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+        ) : accountRole === 'brand' ? (
+          <Sparkles className="h-4 w-4 text-neutral-500 shrink-0" strokeWidth={1.5} />
         ) : (
-          <Store className="h-4 w-4 text-kraft-500 shrink-0" />
+          <Store className="h-4 w-4 text-neutral-500 shrink-0" strokeWidth={1.5} />
         )}
-        <span className="truncate flex-1">{label}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="truncate flex-1">{activeLabel}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
+
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-kraft-50 border-2 border-kraft-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-          {brands.length > 0 && (
-            <div className="px-2 py-1">
-              <p className="px-2 text-xs font-medium text-kraft-400 uppercase">Marques</p>
-              {brands.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => handleSelect('brand', b.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-3 min-h-[44px] rounded-md text-sm text-left touch-manipulation ${entityType === 'brand' && entityId === b.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
-                >
-                  {b.avatar_url?.trim() ? (
-                    <img src={b.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 shrink-0 text-kraft-500" />
-                  )}
-                  <span className="truncate">{b.brand_name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {showrooms.length > 0 && (
-            <div className="px-2 py-1 border-t border-kraft-100">
-              <p className="px-2 text-xs font-medium text-kraft-400 uppercase">Boutiques</p>
-              {showrooms.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleSelect('showroom', s.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-3 min-h-[44px] rounded-md text-sm text-left touch-manipulation ${entityType === 'showroom' && entityId === s.id ? 'bg-kraft-100 text-kraft-black' : 'text-kraft-700 hover:bg-kraft-50'}`}
-                >
-                  {s.avatar_url?.trim() ? (
-                    <img src={s.avatar_url.trim()} alt="" className="h-8 w-8 rounded-full object-cover border border-kraft-200 shrink-0" />
-                  ) : (
-                    <Store className="h-4 w-4 shrink-0 text-kraft-500" />
-                  )}
-                  <span className="truncate">{s.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-white border border-black/[0.06] rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+          {ownedEntities.map((entity) => {
+            const id = entity.id;
+            const name = accountRole === 'brand' ? (entity as Brand).brand_name : (entity as Showroom).name;
+            const avatar = entity.avatar_url?.trim() ?? null;
+            const isActive = entityId === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleSelect(id)}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${isActive ? 'bg-neutral-100 text-neutral-900 font-medium' : 'text-neutral-700 hover:bg-neutral-50'}`}
+              >
+                {avatar ? (
+                  <img src={avatar} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+                ) : accountRole === 'brand' ? (
+                  <Sparkles className="h-4 w-4 shrink-0 text-neutral-400" strokeWidth={1.5} />
+                ) : (
+                  <Store className="h-4 w-4 shrink-0 text-neutral-400" strokeWidth={1.5} />
+                )}
+                <span className="truncate">{name}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

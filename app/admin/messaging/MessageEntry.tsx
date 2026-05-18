@@ -234,22 +234,19 @@ export function MessageEntry({
   switch (message.type) {
     case 'CHAT':
       return (
-        <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div className={`flex w-full items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
           <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
-            <span className={`text-xs text-neutral-500 mb-1 flex items-center gap-1.5 ${isMe ? 'mr-1' : 'ml-1'}`}>
-              {badge && (
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${isMe ? 'bg-stone-700 text-stone-200' : 'bg-neutral-200 text-neutral-600'}`}>
-                  {badge}
-                </span>
-              )}
-              {label}
+            <span className={`text-[11px] font-medium text-neutral-500 mb-1 ${isMe ? 'mr-1' : 'ml-1'}`}>
+              {isMe ? myLabel : otherUserName}
             </span>
             <div
-              className={`rounded-2xl px-4 py-2 ${
-                isMe ? 'bg-stone-800 text-white rounded-br-none' : 'bg-neutral-100 text-neutral-900 rounded-bl-none'
+              className={`px-3.5 py-2.5 text-sm whitespace-pre-wrap break-words leading-relaxed ${
+                isMe
+                  ? 'bg-neutral-900 text-white rounded-2xl rounded-br-sm'
+                  : 'bg-white border border-neutral-200 text-neutral-900 rounded-2xl rounded-bl-sm shadow-sm'
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap break-words">{displayContent}</p>
+              {displayContent}
             </div>
             <span className={`text-[10px] text-neutral-400 mt-1 ${isMe ? 'mr-1' : 'ml-1'}`}>{timeStr}</span>
           </div>
