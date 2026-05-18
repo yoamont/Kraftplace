@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminEntity } from '../context/AdminEntityContext';
-import { Coins, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const PACKS = [
   { id: 3 as const, label: 'Pack 3 Crédits', price: '15', credits: 3 },
@@ -53,7 +53,7 @@ export default function CreditsPage() {
       <div className="mb-6 p-4 rounded-[12px] bg-emerald-50 border border-emerald-100">
         <p className="text-sm text-emerald-900 font-medium mb-1">Comment fonctionnent les crédits ?</p>
         <p className="text-sm text-emerald-800 leading-relaxed">
-          1 crédit = 1 candidature envoyée à une boutique. Le crédit est réservé à l'envoi de votre candidature.
+          1 crédit = 1 candidature envoyée à une boutique. Le crédit est réservé à l&apos;envoi de votre candidature.
           Si la boutique refuse, il vous est restitué. Si elle accepte, il est définitivement débité.
         </p>
       </div>
