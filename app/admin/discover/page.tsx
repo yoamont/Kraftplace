@@ -406,12 +406,13 @@ export default function DiscoverPage() {
     return countB - countA;
   });
 
-  const hasActiveFilters =
-    filterBadgeSlugs.length > 0 ||
-    filterCommissionType !== 'all' ||
-    filterCity != null ||
-    filterClosesInDays != null ||
-    filterMonths.length > 0;
+  const activeFilterCount =
+    (filterBadgeSlugs.length > 0 ? 1 : 0) +
+    (filterCommissionType !== 'all' ? 1 : 0) +
+    (filterCity != null ? 1 : 0) +
+    (filterClosesInDays != null ? 1 : 0) +
+    (filterMonths.length > 0 ? 1 : 0);
+  const hasActiveFilters = activeFilterCount > 0;
 
   function clearAllFilters() {
     setFilterBadgeSlugs([]);
@@ -460,8 +461,8 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-[60vh] bg-[#FBFBFD]">
-      <h1 className="text-xl font-light text-neutral-900 tracking-tight">Explorer</h1>
-      <p className="mt-0.5 text-sm text-neutral-500 font-light">Boutiques qui partagent vos valeurs.</p>
+      <h1 className="text-xl font-light text-neutral-900 tracking-tight">Trouver une boutique</h1>
+      <p className="mt-0.5 text-sm text-neutral-500 font-light">Parcourez les boutiques et envoyez votre candidature.</p>
 
       <div className="sticky top-9 z-10 mt-6 py-4 transition-[backdrop-filter] duration-200 bg-[#FBFBFD]/70 backdrop-blur-md">
         <p className="text-sm font-light text-neutral-500 flex flex-wrap items-center gap-x-1 gap-y-2">
@@ -471,7 +472,7 @@ export default function DiscoverPage() {
               <button
                 type="button"
                 onClick={() => { setOpenCityPopover((v) => !v); setOpenUrgencyPopover(false); setOpenMonthPopover(false); setOpenCommissionPopover(false); }}
-                className="font-semibold text-neutral-900 hover:underline underline-offset-2"
+                className="font-semibold text-neutral-900 underline decoration-dashed decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900 transition-colors cursor-pointer"
               >
                 {filterCity ?? 'toutes les villes'}
               </button>
@@ -496,7 +497,7 @@ export default function DiscoverPage() {
             <button
               type="button"
               onClick={() => { setOpenMonthPopover((v) => !v); setOpenCityPopover(false); setOpenUrgencyPopover(false); setOpenCommissionPopover(false); }}
-              className="font-semibold text-neutral-900 hover:underline underline-offset-2"
+              className="font-semibold text-neutral-900 underline decoration-dashed decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900 transition-colors cursor-pointer"
             >
               {monthLabel}
             </button>
@@ -521,7 +522,7 @@ export default function DiscoverPage() {
             <button
               type="button"
               onClick={() => { setOpenCommissionPopover((v) => !v); setOpenCityPopover(false); setOpenUrgencyPopover(false); setOpenMonthPopover(false); }}
-              className="font-semibold text-neutral-900 hover:underline underline-offset-2"
+              className="font-semibold text-neutral-900 underline decoration-dashed decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900 transition-colors cursor-pointer"
             >
               {commissionLabel}
             </button>
@@ -537,7 +538,7 @@ export default function DiscoverPage() {
           </span>
           {' · '}
           <span className="relative inline-flex" ref={urgencyPopoverRef}>
-            <button type="button" onClick={() => { setOpenUrgencyPopover((v) => !v); setOpenCityPopover(false); setOpenMonthPopover(false); setOpenCommissionPopover(false); }} className="font-semibold text-neutral-900 hover:underline underline-offset-2">
+            <button type="button" onClick={() => { setOpenUrgencyPopover((v) => !v); setOpenCityPopover(false); setOpenMonthPopover(false); setOpenCommissionPopover(false); }} className="font-semibold text-neutral-900 underline decoration-dashed decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900 transition-colors cursor-pointer">
               {filterClosesInDays != null ? `ferme dans ${filterClosesInDays} j` : 'délai'}
             </button>
             {openUrgencyPopover && (
@@ -554,13 +555,14 @@ export default function DiscoverPage() {
           {hasActiveFilters && (
             <>
               {' · '}
-              <button type="button" onClick={clearAllFilters} className="font-medium text-neutral-500 hover:text-neutral-900 transition-colors duration-150">
+              <button type="button" onClick={clearAllFilters} className="inline-flex items-center gap-1 font-medium text-neutral-500 hover:text-neutral-900 transition-colors duration-150">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-neutral-900 text-white text-[10px] font-bold">{activeFilterCount}</span>
                 Réinitialiser
               </button>
             </>
           )}
         </p>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
           {allBadges.map((badge) => {
             const selected = filterBadgeSlugs.includes(badge.slug);
             return (
@@ -568,10 +570,10 @@ export default function DiscoverPage() {
                 key={badge.id}
                 type="button"
                 onClick={() => toggleFilterBadge(badge.slug)}
-                className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${selected ? 'bg-neutral-900 text-white shadow-md' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-800'}`}
-                title={badge.label}
+                className={`inline-flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all duration-200 ${selected ? 'bg-neutral-900 text-white shadow-md' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-800'}`}
               >
                 <BadgeIcon badge={badge} className="w-5 h-5" />
+                <span className="text-[10px] font-medium leading-tight">{badge.label}</span>
               </button>
             );
           })}

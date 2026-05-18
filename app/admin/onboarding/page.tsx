@@ -19,8 +19,6 @@ export default function OnboardingPage() {
   const [brandName, setBrandName] = useState('');
   const [brandDescription, setBrandDescription] = useState('');
   const [brandImageUrl, setBrandImageUrl] = useState('');
-  const [brandCommission, setBrandCommission] = useState('');
-
   const [showroomName, setShowroomName] = useState('');
   const [showroomAddress, setShowroomAddress] = useState('');
   const [showroomCity, setShowroomCity] = useState('');
@@ -48,17 +46,12 @@ export default function OnboardingPage() {
     submittingRef.current = true;
     setLoading(true);
     try {
-      const commission = brandCommission.trim() ? parseFloat(brandCommission.replace(',', '.')) : null;
-      if (commission != null && (Number.isNaN(commission) || commission < 0 || commission > 100)) {
-        setError('Commission entre 0 et 100.');
-        return;
-      }
       const { error: err } = await supabase.from('brands').insert({
         owner_id: userId,
         brand_name: nom,
         description: brandDescription.trim() || null,
         image_url: brandImageUrl.trim() || null,
-        default_commission_rate: commission,
+        default_commission_rate: null,
         credits: 2,
       });
       if (err) {
@@ -128,8 +121,8 @@ export default function OnboardingPage() {
       <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 mb-6">
         <ArrowLeft className="h-4 w-4" /> Retour
       </Link>
-      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">{isBrand ? 'Marque' : 'Boutique'}</h1>
-      <p className="mt-0.5 text-sm font-light text-neutral-500">{isBrand ? 'Informations de votre marque.' : 'Informations de votre lieu.'}</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">{isBrand ? 'Créez votre profil marque' : 'Créez votre boutique'}</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">{isBrand ? 'Quelques informations pour que les boutiques puissent vous découvrir.' : 'Décrivez votre lieu pour attirer les bonnes marques.'}</p>
 
       <form onSubmit={isBrand ? handleCreateBrand : handleCreateShowroom} className="mt-8 space-y-5">
         {isBrand ? (
@@ -143,12 +136,9 @@ export default function OnboardingPage() {
               <textarea value={brandDescription} onChange={(e) => setBrandDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none" placeholder="Présentation de la marque" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">URL image</label>
-              <input type="url" value={brandImageUrl} onChange={(e) => setBrandImageUrl(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="https://..." />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Commission par défaut (%)</label>
-              <input type="text" inputMode="decimal" value={brandCommission} onChange={(e) => setBrandCommission(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="Ex. 20" />
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Photo de couverture <span className="font-normal text-neutral-400">(optionnel)</span></label>
+              <input type="url" value={brandImageUrl} onChange={(e) => setBrandImageUrl(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="Collez un lien vers une image (Instagram, site web…)" />
+              <p className="mt-1 text-xs text-neutral-400">Vous pourrez la modifier plus tard dans les paramètres de votre marque.</p>
             </div>
           </>
         ) : (
@@ -176,8 +166,9 @@ export default function OnboardingPage() {
               <textarea value={showroomDescription} onChange={(e) => setShowroomDescription(e.target.value)} rows={3} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none" placeholder="Décrivez le lieu" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">URL image</label>
-              <input type="url" value={showroomImageUrl} onChange={(e) => setShowroomImageUrl(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="https://..." />
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Photo de couverture <span className="font-normal text-neutral-400">(optionnel)</span></label>
+              <input type="url" value={showroomImageUrl} onChange={(e) => setShowroomImageUrl(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900" placeholder="Collez un lien vers une image (Instagram, Google Maps…)" />
+              <p className="mt-1 text-xs text-neutral-400">Vous pourrez la modifier plus tard dans les paramètres.</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Instagram</label>

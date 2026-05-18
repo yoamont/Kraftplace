@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAdminEntity } from '../context/AdminEntityContext';
+import { useMessengerPanel } from '../context/MessengerPanelContext';
 import { supabase } from '@/lib/supabase';
-import { Package, Loader2, ArrowRight } from 'lucide-react';
+import { Package, Loader2, ArrowRight, MessageSquare } from 'lucide-react';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { BrandCard } from '../components/cards/BrandCard';
 
 export default function BrowseBrandsPage() {
-  const { entityType } = useAdminEntity();
+  const { entityType, activeShowroom } = useAdminEntity();
+  const { openMessenger } = useMessengerPanel();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [productsByBrandId, setProductsByBrandId] = useState<Record<number, Product[]>>({});
   const [badgesByBrandId, setBadgesByBrandId] = useState<Record<number, Badge[]>>({});
@@ -86,8 +88,8 @@ export default function BrowseBrandsPage() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Marques</h1>
-      <p className="mt-0.5 text-sm font-light text-neutral-500">Créateurs et catalogues. Initiez la rencontre.</p>
+      <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Découvrir des marques</h1>
+      <p className="mt-0.5 text-sm font-light text-neutral-500">Parcourez les marques artisanales et initiez le contact.</p>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {brands.map((brand) => {
@@ -99,13 +101,25 @@ export default function BrowseBrandsPage() {
               products={topProducts}
               badges={badgesByBrandId[brand.id] ?? []}
             >
-              <Link
-                href={`/marque/${brand.id}`}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
-              >
-                Voir plus
-                <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href={`/marque/${brand.id}`}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors duration-150"
+                >
+                  Voir la fiche
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+                </Link>
+                {activeShowroom && (
+                  <button
+                    type="button"
+                    onClick={() => openMessenger({ brandId: brand.id, showroomId: activeShowroom.id, title: brand.brand_name, avatarUrl: brand.avatar_url ?? undefined })}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    Contacter
+                  </button>
+                )}
+              </div>
             </BrandCard>
           );
         })}
