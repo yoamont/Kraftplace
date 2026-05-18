@@ -20,7 +20,7 @@ export function PublicShowroomCard({ showroom, badges = [] }: PublicShowroomCard
 
   return (
     <Link
-      href={`/admin/discover`}
+      href={`/boutique/${showroom.id}`}
       className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col"
     >
       <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
