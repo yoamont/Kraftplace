@@ -39,7 +39,7 @@ export default function HomePage() {
       .from('brands')
       .select('id, brand_name, description, avatar_url, image_url')
       .not('image_url', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('brand_name')
       .limit(3)
       .then(({ data }) => setPreviewBrands((data as BrandWithProducts[]) ?? []));
   }, []);

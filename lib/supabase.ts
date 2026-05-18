@@ -102,6 +102,7 @@ export type Showroom = {
   representative_name: string | null;
   email: string | null;
   phone: string | null;
+  created_at: string | null;
 };
 
 export type Badge = {
