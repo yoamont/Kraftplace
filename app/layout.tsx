@@ -24,7 +24,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: "Kraftplace — Le trait d'union entre créateurs et boutiques",
+    default: "Kraftplace — Le trait d'union entre marques et boutiques",
     template: "%s | Kraftplace",
   },
   description: "Kraftplace met en relation les marques artisanales et éthiques avec les boutiques engagées. Trouvez votre prochain partenariat.",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     url: "https://kraftplace.fr",
     siteName: "Kraftplace",
-    title: "Kraftplace — Le trait d'union entre créateurs et boutiques",
+    title: "Kraftplace — Le trait d'union entre marques et boutiques",
     description: "Kraftplace met en relation les marques artisanales et éthiques avec les boutiques engagées.",
   },
   twitter: {

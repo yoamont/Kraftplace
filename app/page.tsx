@@ -111,7 +111,7 @@ export default function HomePage() {
             <Store className="h-10 w-10 sm:h-11 sm:w-11 text-neutral-700 mb-3" strokeWidth={1} aria-hidden />
             <span className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Boutique</span>
             <p className="mt-1.5 text-[12px] font-normal text-neutral-400 leading-snug max-w-[180px]">
-              Sourcez des créateurs qui enrichissent votre univers éthique.
+              Sourcez des marques qui enrichissent votre univers éthique.
             </p>
             <span className="mt-4 inline-block rounded-full bg-neutral-900 text-white text-sm font-medium px-4 py-2">
               Créer mon compte
@@ -254,7 +254,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="rounded-2xl bg-neutral-50/80 border border-black/[0.04] p-6">
               <Palette className="h-6 w-6 text-neutral-700 mb-3" strokeWidth={1.5} aria-hidden />
-              <h3 className="font-semibold text-neutral-900 text-[15px]">Pour les créateurs</h3>
+              <h3 className="font-semibold text-neutral-900 text-[15px]">Pour les marques</h3>
               <p className="mt-1.5 text-sm text-neutral-600 leading-relaxed font-light">
                 Accédez à des lieux triés sur le volet, alignés avec votre démarche artisanale et éthique. Fini le démarchage à froid.
               </p>
@@ -339,7 +339,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 rounded-full bg-neutral-900 text-white text-sm font-medium px-6 py-3 hover:bg-neutral-800 transition-colors"
             >
               <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-              Je suis créateur
+              Je suis une marque
             </Link>
             <Link
               href={user ? '/admin' : '/signup?type=showroom'}

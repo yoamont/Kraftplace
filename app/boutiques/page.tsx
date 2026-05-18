@@ -122,7 +122,7 @@ export default function BoutiquesGaleriePage() {
           Nos boutiques partenaires
         </h1>
         <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-lg mx-auto">
-          Parcourez les boutiques et showrooms qui accueillent les créateurs sur Kraftplace.
+          Parcourez les boutiques partenaires de Kraftplace.
         </p>
       </section>
 

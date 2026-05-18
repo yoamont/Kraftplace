@@ -138,7 +138,7 @@ export default function MarquesGaleriePage() {
           Nos marques partenaires
         </h1>
         <p className="mt-3 text-sm sm:text-base text-neutral-500 max-w-lg mx-auto">
-          Découvrez les créateurs artisanaux et éthiques présents sur Kraftplace.
+          Découvrez les marques artisanales et éthiques présentes sur Kraftplace.
         </p>
       </section>
 
