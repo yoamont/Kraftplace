@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import type { Badge, Brand, Product, Showroom } from '@/lib/supabase';
 import { Store, Sparkles, Calendar, MessageCircle, Zap, ArrowRight, MapPin, Building2, Clock, Shield, Handshake, Palette } from 'lucide-react';
@@ -141,12 +140,10 @@ export default function HomePage() {
                   >
                     <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
                       {brand.image_url?.trim() ? (
-                        <Image
+                        <img
                           src={brand.image_url.trim()}
                           alt={brand.brand_name ?? ''}
-                          fill
-                          className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-neutral-300">
@@ -157,7 +154,7 @@ export default function HomePage() {
                     <div className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center relative">
                         {brand.avatar_url?.trim() ? (
-                          <Image src={brand.avatar_url.trim()} alt="" fill className="object-cover" sizes="40px" />
+                          <img src={brand.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <Sparkles className="h-4 w-4 text-neutral-400" />
                         )}
@@ -195,12 +192,10 @@ export default function HomePage() {
                     >
                       <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
                         {showroom.image_url?.trim() ? (
-                          <Image
+                          <img
                             src={showroom.image_url.trim()}
                             alt={showroom.name ?? ''}
-                            fill
-                            className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-neutral-300">
@@ -211,7 +206,7 @@ export default function HomePage() {
                       <div className="p-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center relative">
                           {showroom.avatar_url?.trim() ? (
-                            <Image src={showroom.avatar_url.trim()} alt="" fill className="object-cover" sizes="40px" />
+                            <img src={showroom.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Store className="h-4 w-4 text-neutral-400" />
                           )}

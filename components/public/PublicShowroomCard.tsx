@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Store, MapPin, ArrowRight, Building2, Clock } from 'lucide-react';
 import type { Showroom, Badge } from '@/lib/supabase';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
@@ -24,14 +23,12 @@ export function PublicShowroomCard({ showroom, badges = [] }: PublicShowroomCard
       href={`/admin/discover`}
       className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200 flex flex-col"
     >
-      <div className="aspect-[4/3] bg-neutral-100 relative">
+      <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
         {showroom.image_url?.trim() ? (
-          <Image
+          <img
             src={showroom.image_url.trim()}
             alt={showroom.name ?? ''}
-            fill
-            className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-300">
@@ -55,15 +52,9 @@ export function PublicShowroomCard({ showroom, badges = [] }: PublicShowroomCard
 
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center relative">
+          <div className="w-11 h-11 rounded-full bg-neutral-100 shrink-0 overflow-hidden flex items-center justify-center">
             {showroom.avatar_url?.trim() ? (
-              <Image
-                src={showroom.avatar_url.trim()}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="44px"
-              />
+              <img src={showroom.avatar_url.trim()} alt="" className="w-full h-full object-cover" />
             ) : (
               <Store className="h-5 w-5 text-neutral-400" />
             )}
