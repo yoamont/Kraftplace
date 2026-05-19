@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Package, Instagram, Globe, ExternalLink, ChevronLeft } from 'lucide-react';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
-import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { ShareButton } from '@/components/public/ShareButton';
@@ -136,7 +135,6 @@ export default async function MarquePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-      <LandingHeader />
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
