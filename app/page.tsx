@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Store, Sparkles } from 'lucide-react';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
-import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { HomeGalleries } from '@/app/components/HomeGalleries';
 import type { Badge } from '@/lib/supabase';
@@ -80,8 +79,6 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-      <LandingHeader />
-
       {/* ── HERO ── */}
       <section className="flex flex-col items-center justify-center px-4 pt-16 pb-14 sm:pt-20 sm:pb-18 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-neutral-900 tracking-tight max-w-2xl leading-[1.2]">
