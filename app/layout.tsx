@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Inter, Geist_Mono, Playfair_Display } from "next/font/google";
 import CookieConsent from "@/components/CookieConsent";
 import ConditionalAnalytics from "@/components/ConditionalAnalytics";
@@ -58,17 +57,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
       >
-        <div className="sticky top-0 z-[100] w-full h-9 flex items-center justify-center bg-[#1A1A1A] text-white py-1.5 px-4">
-          <span className="text-[11px] sm:text-xs font-medium">
-            Version Pilote : Kraftplace grandit avec vous.{' '}
-            <Link
-              href="/mentions-legales"
-              className="underline underline-offset-2 hover:no-underline"
-            >
-              En savoir plus
-            </Link>
-          </span>
-        </div>
         {children}
         <CookieConsent />
         <ConditionalAnalytics />

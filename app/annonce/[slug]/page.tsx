@@ -38,10 +38,9 @@ export default function AnnoncePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-        <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-9 z-50">
+        <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-50">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-[#1A1A1A] font-semibold tracking-tight kraftplace-wordmark text-base">Kraftplace</span>
-            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider text-[#5c4a38] bg-[#c9b896]/40 border border-[#C4B09A]">Beta</span>
           </Link>
           <Link href="/login" className="text-xs font-medium text-[#1A1A1A]/90 hover:text-[#1A1A1A] transition-colors">Connexion</Link>
         </header>
@@ -55,10 +54,9 @@ export default function AnnoncePage() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-        <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-9 z-50">
+        <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-50">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-[#1A1A1A] font-semibold tracking-tight kraftplace-wordmark text-base">Kraftplace</span>
-            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider text-[#5c4a38] bg-[#c9b896]/40 border border-[#C4B09A]">Beta</span>
           </Link>
           <Link href="/login" className="text-xs font-medium text-[#1A1A1A]/90 hover:text-[#1A1A1A] transition-colors">Connexion</Link>
         </header>
@@ -77,12 +75,9 @@ export default function AnnoncePage() {
   const id = Number(listingId);
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
-      <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-9 z-50">
+      <header className="nav-kraft shrink-0 flex items-center justify-between px-4 py-2.5 sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-[#1A1A1A] font-semibold tracking-tight kraftplace-wordmark text-base">Kraftplace</span>
-          <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium uppercase tracking-wider text-[#5c4a38] bg-[#c9b896]/40 border border-[#C4B09A]">
-            Beta
-          </span>
         </Link>
         <Link
           href="/login"

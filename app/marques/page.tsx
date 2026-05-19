@@ -135,7 +135,7 @@ export default function MarquesGaleriePage() {
         </p>
       </section>
 
-      <section className="sticky top-[calc(2.25rem+57px)] z-40 bg-[#FBFBFD]/95 backdrop-blur-md border-b border-black/[0.06]">
+      <section className="sticky top-[57px] z-40 bg-[#FBFBFD]/95 backdrop-blur-md border-b border-black/[0.06]">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative">
