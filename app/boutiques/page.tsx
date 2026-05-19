@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, Messa
 import Link from 'next/link';
 import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
+import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { BoutiqueCard } from '@/app/admin/components/cards/BoutiqueCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
@@ -129,6 +130,7 @@ export default function BoutiquesGaleriePage() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
+      <LandingHeader />
 
       <section className="px-4 pt-12 pb-8 sm:pt-16 sm:pb-10 text-center border-b border-black/[0.06]">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight">

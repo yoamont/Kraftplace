@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, X, Loader2, Package, MessageSquare, ArrowRig
 import Link from 'next/link';
 import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
+import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { BrandCard } from '@/app/admin/components/cards/BrandCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
@@ -123,6 +124,7 @@ export default function MarquesGaleriePage() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
+      <LandingHeader />
 
       <section className="px-4 pt-12 pb-8 sm:pt-16 sm:pb-10 text-center border-b border-black/[0.06]">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 tracking-tight">
