@@ -116,7 +116,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => { setOpen(false); logout(); }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 hover:bg-neutral-100/80 hover:text-neutral-900 transition-colors duration-150"
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
             >
               <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.5} />
               Déconnexion
@@ -125,7 +125,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-9 z-10 h-14 px-4 flex items-center justify-between border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
+        <header className="sticky top-0 z-10 h-14 px-4 flex items-center justify-between border-b border-black/[0.06] bg-[#FBFBFD]/95 backdrop-blur-md">
           <div className="flex items-center">
             <button type="button" className="lg:hidden p-2 -ml-2 rounded-xl text-neutral-600 hover:bg-black/[0.06] transition-colors" onClick={() => setOpen(true)} aria-label="Menu">
               <Menu className="h-5 w-5" />

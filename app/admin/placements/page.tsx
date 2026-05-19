@@ -6,7 +6,7 @@ import { usePlacements, type PlacementRow, type PlacementStatus } from '@/lib/ho
 import { PartnershipDetailDrawer } from './PartnershipDetailDrawer';
 import { ChevronRight, FileText, Search, Calendar } from 'lucide-react';
 
-type StatusFilter = 'all' | 'pending' | 'accepted' | 'ended';
+type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'ended';
 
 function StatusBadge({ status, isEnded }: { status: PlacementStatus; isEnded?: boolean }) {
   if (isEnded)
@@ -44,7 +44,6 @@ type PlacementGroup = {
 };
 
 function isRowEnded(row: PlacementRow): boolean {
-  if (row.status === 'rejected') return true;
   if (row.status === 'accepted' && row.partnershipEndDate) {
     try {
       return new Date(row.partnershipEndDate) < new Date();
@@ -82,6 +81,7 @@ export default function PlacementsPage() {
         const ended = isRowEnded(row);
         if (statusFilter === 'pending') return row.status === 'pending';
         if (statusFilter === 'accepted') return row.status === 'accepted' && !ended;
+        if (statusFilter === 'rejected') return row.status === 'rejected';
         if (statusFilter === 'ended') return ended;
         return true;
       });
@@ -153,7 +153,7 @@ export default function PlacementsPage() {
         <>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="inline-flex rounded-xl p-0.5 bg-neutral-100 border border-black/[0.06]">
-              {(['all', 'pending', 'accepted', 'ended'] as const).map((key) => (
+              {(['all', 'pending', 'accepted', 'rejected', 'ended'] as const).map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -164,7 +164,7 @@ export default function PlacementsPage() {
                       : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
-                  {key === 'all' ? 'Tous' : key === 'pending' ? 'En attente' : key === 'accepted' ? 'Acceptés' : 'Terminés'}
+                  {key === 'all' ? 'Tous' : key === 'pending' ? 'En attente' : key === 'accepted' ? 'Acceptés' : key === 'rejected' ? 'Refusés' : 'Terminés'}
                 </button>
               ))}
             </div>
