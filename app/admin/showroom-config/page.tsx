@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Check, Trash2, Upload, ImageIcon } from 'lucide-rea
 import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
 import { ShowroomFichePreview } from '../components/ShowroomFichePreview';
 import { BadgeIcon } from '../components/BadgeIcon';
+import { CategoryPicker } from '../components/CategoryPicker';
 import { SiretField } from '../components/SiretField';
 
 const LEGAL_STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -146,6 +147,8 @@ export default function ShowroomConfigPage() {
   ]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [initialCategoryIds, setInitialCategoryIds] = useState<number[]>([]);
   const MAX_BADGES = 5;
 
   const [initialSnapshot, setInitialSnapshot] = useState<FormSnapshot | null>(null);
@@ -156,14 +159,18 @@ export default function ShowroomConfigPage() {
       return;
     }
     (async () => {
-      const [{ data: optionsData }, { data: badgesData }, { data: showroomBadgesData }] = await Promise.all([
+      const [{ data: optionsData }, { data: badgesData }, { data: showroomBadgesData }, { data: showroomCatsData }] = await Promise.all([
         supabase.from('showroom_commission_options').select('*').eq('showroom_id', activeShowroom.id).order('sort_order'),
         supabase.from('badges').select('*').order('sort_order'),
         supabase.from('showroom_badges').select('badge_id').eq('showroom_id', activeShowroom.id),
+        supabase.from('showroom_categories').select('category_id').eq('showroom_id', activeShowroom.id),
       ]);
       const options = (optionsData as ShowroomCommissionOption[]) ?? [];
       const snap = snapshotFromShowroom(activeShowroom, options);
       snap.badgeIds = ((showroomBadgesData as { badge_id: number }[]) ?? []).map((r) => r.badge_id);
+      const catIds = ((showroomCatsData as { category_id: number }[]) ?? []).map((r) => r.category_id);
+      setSelectedCategoryIds(catIds);
+      setInitialCategoryIds(catIds);
       setInitialSnapshot(snap);
       setAllBadges((badgesData as Badge[]) ?? []);
       setSelectedBadgeIds(snap.badgeIds);
@@ -254,7 +261,9 @@ export default function ShowroomConfigPage() {
       initialSnapshot.email !== currentSnapshot.email ||
       initialSnapshot.phone !== currentSnapshot.phone ||
       initialSnapshot.badgeIds.length !== currentSnapshot.badgeIds.length ||
-      initialSnapshot.badgeIds.some((id, i) => currentSnapshot.badgeIds[i] !== id)
+      initialSnapshot.badgeIds.some((id, i) => currentSnapshot.badgeIds[i] !== id) ||
+      selectedCategoryIds.length !== initialCategoryIds.length ||
+      selectedCategoryIds.some((id) => !initialCategoryIds.includes(id))
     );
   }, [initialSnapshot, currentSnapshot]);
 
@@ -415,11 +424,16 @@ export default function ShowroomConfigPage() {
         const { error: errBadges } = await supabase
           .from('showroom_badges')
           .insert(selectedBadgeIds.map((badge_id) => ({ showroom_id: activeShowroom.id, badge_id })));
-        if (errBadges) {
-          setError(errBadges.message);
-          return;
-        }
+        if (errBadges) { setError(errBadges.message); return; }
       }
+      await supabase.from('showroom_categories').delete().eq('showroom_id', activeShowroom.id);
+      if (selectedCategoryIds.length > 0) {
+        const { error: errCats } = await supabase
+          .from('showroom_categories')
+          .insert(selectedCategoryIds.map((category_id) => ({ showroom_id: activeShowroom.id, category_id })));
+        if (errCats) { setError(errCats.message); return; }
+      }
+      setInitialCategoryIds([...selectedCategoryIds]);
       const optsSnapshot = commissionOptions.map((o) => ({ ...o }));
       while (optsSnapshot.length < 3) optsSnapshot.push({ rent: '', rentPeriod: 'month', commissionPercent: '', description: '' });
       setInitialSnapshot({
@@ -764,6 +778,12 @@ export default function ShowroomConfigPage() {
             <p className="text-xs text-neutral-500 mt-1">Vos annonces de recrutement (Mes Annonces) devront s'inscrire dans cette période.</p>
           </div>
         )}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Catégories recherchées</label>
+          <p className="text-xs text-neutral-500 mb-3">Quels types de produits recherchez-vous pour votre boutique ? Les marques correspondantes vous trouveront plus facilement.</p>
+          <CategoryPicker selectedIds={selectedCategoryIds} onChange={setSelectedCategoryIds} />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-2">Valeurs (max {MAX_BADGES})</label>
           <p className="text-xs text-neutral-500 mb-2">Sélectionnez jusqu'à {MAX_BADGES} badges pour afficher sur votre fiche boutique.</p>

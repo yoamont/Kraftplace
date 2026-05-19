@@ -5,7 +5,8 @@ import { Store, MapPin, Instagram, ExternalLink, ChevronLeft, Clock, Building2 }
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
-import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
+import type { Showroom, ShowroomCommissionOption, Badge, Category } from '@/lib/supabase';
+import { CategoryIcon } from '@/app/admin/components/CategoryPicker';
 import { ShareButton } from '@/components/public/ShareButton';
 import { CandidatureCTA } from './CandidatureCTA';
 import { toSlug, idFromSlug } from '@/lib/slug';
@@ -25,18 +26,23 @@ export async function generateStaticParams() {
 type Props = { params: Promise<{ slug: string }> };
 
 async function getShowroom(id: number) {
-  const [{ data: showroom }, { data: options }, { data: badgeRows }, { data: allBadges }] = await Promise.all([
+  const [{ data: showroom }, { data: options }, { data: badgeRows }, { data: allBadges }, { data: catRows }, { data: allCats }] = await Promise.all([
     supabase.from('showrooms').select('*').eq('id', id).eq('publication_status', 'published').single(),
     supabase.from('showroom_commission_options').select('*').eq('showroom_id', id).order('sort_order'),
     supabase.from('showroom_badges').select('badge_id').eq('showroom_id', id),
     supabase.from('badges').select('*').order('sort_order'),
+    supabase.from('showroom_categories').select('category_id').eq('showroom_id', id),
+    supabase.from('categories').select('*').order('sort_order'),
   ]);
   if (!showroom) return null;
 
   const badgeIds = new Set((badgeRows ?? []).map((r: { badge_id: number }) => r.badge_id));
   const badges = (allBadges as Badge[] ?? []).filter((b) => badgeIds.has(b.id));
 
-  return { showroom: showroom as Showroom, commissionOptions: (options as ShowroomCommissionOption[]) ?? [], badges };
+  const categoryIds = new Set((catRows ?? []).map((r: { category_id: number }) => r.category_id));
+  const categories = (allCats as Category[] ?? []).filter((c) => categoryIds.has(c.id));
+
+  return { showroom: showroom as Showroom, commissionOptions: (options as ShowroomCommissionOption[]) ?? [], badges, categories };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -99,7 +105,7 @@ export default async function BoutiquePage({ params }: Props) {
   const data = await getShowroom(numId);
   if (!data) notFound();
 
-  const { showroom, commissionOptions, badges } = data;
+  const { showroom, commissionOptions, badges, categories } = data;
 
   // Redirect malformed slugs (e.g. old /boutique/3 numeric-only URLs)
   const canonicalSlug = toSlug(showroom.name, numId);
@@ -221,6 +227,18 @@ export default async function BoutiquePage({ params }: Props) {
               <p className="mt-5 text-sm text-neutral-500 leading-relaxed text-center max-w-sm">
                 {showroom.description.trim()}
               </p>
+            )}
+
+            {/* Catégories recherchées */}
+            {categories.length > 0 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {categories.map((cat) => (
+                  <span key={cat.id} className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 border border-violet-100 px-3 py-1.5 text-xs font-medium text-violet-700">
+                    <CategoryIcon icon={cat.icon} className="h-3 w-3 shrink-0" />
+                    {cat.name}
+                  </span>
+                ))}
+              </div>
             )}
 
             {/* Instagram */}

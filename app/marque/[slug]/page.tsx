@@ -5,7 +5,8 @@ import { Package, Instagram, Globe, ExternalLink, ChevronLeft } from 'lucide-rea
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
-import type { Brand, Product, Badge } from '@/lib/supabase';
+import type { Brand, Product, Badge, Category } from '@/lib/supabase';
+import { CategoryIcon } from '@/app/admin/components/CategoryPicker';
 import { ShareButton } from '@/components/public/ShareButton';
 import { toSlug, idFromSlug } from '@/lib/slug';
 import type { Metadata } from 'next';
@@ -24,18 +25,23 @@ export async function generateStaticParams() {
 type Props = { params: Promise<{ slug: string }> };
 
 async function getBrand(id: number) {
-  const [{ data: brand }, { data: products }, { data: badgeRows }, { data: allBadges }] = await Promise.all([
+  const [{ data: brand }, { data: products }, { data: badgeRows }, { data: allBadges }, { data: catRows }, { data: allCats }] = await Promise.all([
     supabase.from('brands').select('*').eq('id', id).single(),
     supabase.from('products').select('id, product_name, price, description, image_url').eq('brand_id', id).order('created_at', { ascending: false }).limit(12),
     supabase.from('brand_badges').select('badge_id').eq('brand_id', id),
     supabase.from('badges').select('*').order('sort_order'),
+    supabase.from('brand_categories').select('category_id').eq('brand_id', id),
+    supabase.from('categories').select('*').order('sort_order'),
   ]);
   if (!brand) return null;
 
   const badgeIds = new Set((badgeRows ?? []).map((r: { badge_id: number }) => r.badge_id));
   const badges = (allBadges as Badge[] ?? []).filter((b) => badgeIds.has(b.id));
 
-  return { brand: brand as Brand, products: (products as Product[]) ?? [], badges };
+  const categoryIds = new Set((catRows ?? []).map((r: { category_id: number }) => r.category_id));
+  const categories = (allCats as Category[] ?? []).filter((c) => categoryIds.has(c.id));
+
+  return { brand: brand as Brand, products: (products as Product[]) ?? [], badges, categories };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -84,7 +90,7 @@ export default async function MarquePage({ params }: Props) {
   const data = await getBrand(numId);
   if (!data) notFound();
 
-  const { brand, products, badges } = data;
+  const { brand, products, badges, categories } = data;
 
   // Redirect malformed slugs (e.g. old /marque/7 numeric-only URLs)
   const canonicalSlug = toSlug(brand.brand_name, numId);
@@ -198,6 +204,18 @@ export default async function MarquePage({ params }: Props) {
               <p className="mt-5 text-sm text-neutral-500 leading-relaxed text-center max-w-sm">
                 {brand.description.trim()}
               </p>
+            )}
+
+            {/* Catégories */}
+            {categories.length > 0 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {categories.map((cat) => (
+                  <span key={cat.id} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700">
+                    <CategoryIcon icon={cat.icon} className="h-3 w-3 shrink-0" />
+                    {cat.name}
+                  </span>
+                ))}
+              </div>
             )}
 
             {/* Liens Instagram + Site web */}

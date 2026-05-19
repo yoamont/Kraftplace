@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, MessageSquare } from 'lucide-react';
+import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, MessageSquare, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +10,8 @@ import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { BoutiqueCard } from '@/app/admin/components/cards/BoutiqueCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
-import type { Showroom, Badge, Brand, ShowroomCommissionOption } from '@/lib/supabase';
+import { CategoryIcon } from '@/app/admin/components/CategoryPicker';
+import type { Showroom, Badge, Brand, ShowroomCommissionOption, Category } from '@/lib/supabase';
 
 export default function BoutiquesGaleriePage() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function BoutiquesGaleriePage() {
   const [commissionOptionsByShowroomId, setCommissionOptionsByShowroomId] = useState<Record<number, ShowroomCommissionOption[]>>({});
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [allCities, setAllCities] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categoriesByShowroomId, setCategoriesByShowroomId] = useState<Record<number, Category[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [activeBrand, setActiveBrand] = useState<Brand | null>(null);
@@ -27,6 +30,7 @@ export default function BoutiquesGaleriePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<Set<number>>(new Set());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function BoutiquesGaleriePage() {
         if (brand) setActiveBrand(brand as Brand);
       }
 
-      const [showroomsRes, { data: badgesData }, { data: showroomBadgesData }, { data: commissionData }] = await Promise.all([
+      const [showroomsRes, { data: badgesData }, { data: showroomBadgesData }, { data: commissionData }, { data: catsData }, { data: showroomCatsData }] = await Promise.all([
         supabase
           .from('showrooms')
           .select('id, name, city, description, avatar_url, image_url, instagram_handle, shop_type, is_permanent, start_date, end_date, candidature_open_from, candidature_open_to')
@@ -52,6 +56,8 @@ export default function BoutiquesGaleriePage() {
         supabase.from('badges').select('*').order('sort_order'),
         supabase.from('showroom_badges').select('showroom_id, badge_id'),
         supabase.from('showroom_commission_options').select('*').order('sort_order'),
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('showroom_categories').select('showroom_id, category_id'),
       ]);
 
       const showroomsList = (showroomsRes.data as Showroom[]) ?? [];
@@ -77,6 +83,19 @@ export default function BoutiquesGaleriePage() {
         commissionByShowroom[opt.showroom_id].push(opt);
       }
       setCommissionOptionsByShowroomId(commissionByShowroom);
+
+      const catsList = (catsData as Category[]) ?? [];
+      setAllCategories(catsList);
+      const catMap = Object.fromEntries(catsList.map((c) => [c.id, c]));
+      const catsByShowroom: Record<number, Category[]> = {};
+      for (const sc of (showroomCatsData as { showroom_id: number; category_id: number }[]) ?? []) {
+        const cat = catMap[sc.category_id];
+        if (cat) {
+          if (!catsByShowroom[sc.showroom_id]) catsByShowroom[sc.showroom_id] = [];
+          catsByShowroom[sc.showroom_id].push(cat);
+        }
+      }
+      setCategoriesByShowroomId(catsByShowroom);
 
       setLoading(false);
     })();
@@ -121,12 +140,15 @@ export default function BoutiquesGaleriePage() {
         return true;
       });
     }
+    if (selectedCategoryId !== '') {
+      result = result.filter((s) => (categoriesByShowroomId[s.id] ?? []).some((c) => c.id === selectedCategoryId));
+    }
     return result;
-  }, [showrooms, searchQuery, selectedCity, selectedBadgeIds, badgesByShowroomId]);
+  }, [showrooms, searchQuery, selectedCity, selectedBadgeIds, badgesByShowroomId, selectedCategoryId, categoriesByShowroomId]);
 
   const toggleBadge = (id: number) => setSelectedBadgeIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  const clearFilters = () => { setSearchQuery(''); setSelectedCity(''); setSelectedBadgeIds(new Set()); };
-  const hasActiveFilters = searchQuery.trim() !== '' || selectedCity !== '' || selectedBadgeIds.size > 0;
+  const clearFilters = () => { setSearchQuery(''); setSelectedCity(''); setSelectedBadgeIds(new Set()); setSelectedCategoryId(''); };
+  const hasActiveFilters = searchQuery.trim() !== '' || selectedCity !== '' || selectedBadgeIds.size > 0 || selectedCategoryId !== '';
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
@@ -170,6 +192,20 @@ export default function BoutiquesGaleriePage() {
                 >
                   <option value="">Toutes les villes</option>
                   {allCities.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </div>
+            )}
+
+            {allCategories.length > 0 && (
+              <div className="relative">
+                <Layers className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+                  className={`appearance-none pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer ${selectedCategoryId !== '' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-700 border-black/[0.08] hover:border-neutral-300'}`}
+                >
+                  <option value="">Toutes les catégories</option>
+                  {allCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </select>
               </div>
             )}

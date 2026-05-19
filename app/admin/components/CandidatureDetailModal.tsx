@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Sparkles, Store, Send, Pencil, CheckCircle, XCircle, Handshake, MessageSquare } from 'lucide-react';
-import type { Candidature, ShowroomCommissionOption } from '@/lib/supabase';
+import type { Candidature, ShowroomCommissionOption, Category } from '@/lib/supabase';
 import { useAdminEntity } from '../context/AdminEntityContext';
 import { MessageList } from './MessageList';
 import { getOrCreateConversationId } from '@/lib/conversations';
+import { CategoryIcon } from './CategoryPicker';
 
 type BrandRow = { id: number; brand_name: string; owner_id: string; avatar_url?: string | null };
 type ShowroomRow = { id: number; name: string; owner_id: string; avatar_url?: string | null };
@@ -45,6 +46,8 @@ export function CandidatureDetailModal({
   const [showroomRow, setShowroomRow] = useState<ShowroomRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshedCandidature, setRefreshedCandidature] = useState<CandidatureDetail | null>(null);
+  const [brandCategories, setBrandCategories] = useState<Category[]>([]);
+  const [showroomCategoryIds, setShowroomCategoryIds] = useState<Set<number>>(new Set());
   const [messageBody, setMessageBody] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -52,11 +55,18 @@ export function CandidatureDetailModal({
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const fetchCandidature = useCallback(async () => {
-    const [candRes, brandRes, showroomRes] = await Promise.all([
+    const [candRes, brandRes, showroomRes, { data: allCatsData }, { data: brandCatRows }, { data: showroomCatRows }] = await Promise.all([
       supabase.from('candidatures').select('*').eq('id', candidature.id).single(),
       supabase.from('brands').select('id, brand_name, owner_id, avatar_url').eq('id', candidature.brand_id).single(),
       supabase.from('showrooms').select('id, name, owner_id, avatar_url').eq('id', candidature.showroom_id).single(),
+      supabase.from('categories').select('*').order('sort_order'),
+      supabase.from('brand_categories').select('category_id').eq('brand_id', candidature.brand_id),
+      supabase.from('showroom_categories').select('category_id').eq('showroom_id', candidature.showroom_id),
     ]);
+    const catMap = Object.fromEntries(((allCatsData as Category[]) ?? []).map((c) => [c.id, c]));
+    const bCatIds = ((brandCatRows as { category_id: number }[]) ?? []).map((r) => r.category_id);
+    setBrandCategories(bCatIds.map((id) => catMap[id]).filter(Boolean) as Category[]);
+    setShowroomCategoryIds(new Set(((showroomCatRows as { category_id: number }[]) ?? []).map((r) => r.category_id)));
     const raw = candRes.data as (Candidature & { showroom?: { name?: string }; brand?: { brand_name?: string }; option?: ShowroomCommissionOption }) | null;
     if (raw) {
       let option: ShowroomCommissionOption | undefined;
@@ -328,6 +338,29 @@ export function CandidatureDetailModal({
                   </>
                 )}
               </div>
+
+              {/* Catégories de la marque (avec matching showroom) */}
+              {viewerSide === 'showroom' && brandCategories.length > 0 && (
+                <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/30 shrink-0">
+                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Catégories de la marque</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {brandCategories.map((cat) => {
+                      const matches = showroomCategoryIds.has(cat.id);
+                      return (
+                        <span
+                          key={cat.id}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${matches ? 'bg-violet-50 border border-violet-200 text-violet-700' : 'bg-neutral-100 border border-neutral-200 text-neutral-500'}`}
+                          title={matches ? 'Correspond à vos catégories' : undefined}
+                        >
+                          <CategoryIcon icon={cat.icon} className="h-3 w-3 shrink-0" />
+                          {cat.name}
+                          {matches && <span className="ml-0.5 text-violet-400">✓</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Fil de messages unifié (même source que /messages) */}
               <div className="flex-1 overflow-y-auto min-h-0 p-4">

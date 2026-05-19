@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, SlidersHorizontal, X, Loader2, Package, MessageSquare, ArrowRight } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Loader2, Package, MessageSquare, ArrowRight, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +10,8 @@ import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { BrandCard } from '@/app/admin/components/cards/BrandCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
-import type { Brand, Product, Badge, Showroom } from '@/lib/supabase';
+import { CategoryIcon } from '@/app/admin/components/CategoryPicker';
+import type { Brand, Product, Badge, Showroom, Category } from '@/lib/supabase';
 
 export default function MarquesGaleriePage() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function MarquesGaleriePage() {
   const [productsByBrandId, setProductsByBrandId] = useState<Record<number, Product[]>>({});
   const [badgesByBrandId, setBadgesByBrandId] = useState<Record<number, Badge[]>>({});
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categoriesByBrandId, setCategoriesByBrandId] = useState<Record<number, Category[]>>({});
   const [loading, setLoading] = useState(true);
 
   const [activeShowroom, setActiveShowroom] = useState<Showroom | null>(null);
@@ -25,6 +28,7 @@ export default function MarquesGaleriePage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<Set<number>>(new Set());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -45,11 +49,13 @@ export default function MarquesGaleriePage() {
       const brandIds = [...new Set((productsData ?? []).map((p: { brand_id: number }) => p.brand_id).filter(Boolean))] as number[];
       if (brandIds.length === 0) { setLoading(false); return; }
 
-      const [brandsRes, productsRes, { data: badgesData }, { data: brandBadgesData }] = await Promise.all([
+      const [brandsRes, productsRes, { data: badgesData }, { data: brandBadgesData }, { data: catsData }, { data: brandCatsData }] = await Promise.all([
         supabase.from('brands').select('id, brand_name, avatar_url, description, image_url, instagram_handle, website_url').in('id', brandIds).order('brand_name'),
         supabase.from('products').select('id, brand_id, product_name, image_url, price').in('brand_id', brandIds).order('created_at', { ascending: false }),
         supabase.from('badges').select('*').order('sort_order'),
         supabase.from('brand_badges').select('brand_id, badge_id').in('brand_id', brandIds),
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('brand_categories').select('brand_id, category_id').in('brand_id', brandIds),
       ]);
 
       setBrands((brandsRes.data as Brand[]) ?? []);
@@ -73,6 +79,20 @@ export default function MarquesGaleriePage() {
         }
       }
       setBadgesByBrandId(badgesByBrand);
+
+      const catsList = (catsData as Category[]) ?? [];
+      setAllCategories(catsList);
+      const catMap = Object.fromEntries(catsList.map((c) => [c.id, c]));
+      const catsByBrand: Record<number, Category[]> = {};
+      for (const bc of (brandCatsData as { brand_id: number; category_id: number }[]) ?? []) {
+        const cat = catMap[bc.category_id];
+        if (cat) {
+          if (!catsByBrand[bc.brand_id]) catsByBrand[bc.brand_id] = [];
+          catsByBrand[bc.brand_id].push(cat);
+        }
+      }
+      setCategoriesByBrandId(catsByBrand);
+
       setLoading(false);
     })();
   }, []);
@@ -115,12 +135,15 @@ export default function MarquesGaleriePage() {
         return true;
       });
     }
+    if (selectedCategoryId !== '') {
+      result = result.filter((b) => (categoriesByBrandId[b.id] ?? []).some((c) => c.id === selectedCategoryId));
+    }
     return result;
-  }, [brands, searchQuery, selectedBadgeIds, badgesByBrandId]);
+  }, [brands, searchQuery, selectedBadgeIds, badgesByBrandId, selectedCategoryId, categoriesByBrandId]);
 
   const toggleBadge = (id: number) => setSelectedBadgeIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  const clearFilters = () => { setSearchQuery(''); setSelectedBadgeIds(new Set()); };
-  const hasActiveFilters = searchQuery.trim() !== '' || selectedBadgeIds.size > 0;
+  const clearFilters = () => { setSearchQuery(''); setSelectedBadgeIds(new Set()); setSelectedCategoryId(''); };
+  const hasActiveFilters = searchQuery.trim() !== '' || selectedBadgeIds.size > 0 || selectedCategoryId !== '';
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex flex-col">
@@ -153,6 +176,20 @@ export default function MarquesGaleriePage() {
                 </button>
               )}
             </div>
+            {allCategories.length > 0 && (
+              <div className="relative">
+                <Layers className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+                  className={`appearance-none pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer ${selectedCategoryId !== '' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-700 border-black/[0.08] hover:border-neutral-300'}`}
+                >
+                  <option value="">Toutes les catégories</option>
+                  {allCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+              </div>
+            )}
+
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${showFilters || selectedBadgeIds.size > 0 ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-700 border-black/[0.08] hover:border-neutral-300'}`}

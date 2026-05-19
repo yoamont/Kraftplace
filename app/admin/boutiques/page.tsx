@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, MessageSquare } from 'lucide-react';
+import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, MessageSquare, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
 import { BoutiqueCard } from '@/app/admin/components/cards/BoutiqueCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
-import type { Showroom, Badge, Brand, ShowroomCommissionOption } from '@/lib/supabase';
+import { CategoryIcon } from '@/app/admin/components/CategoryPicker';
+import type { Showroom, Badge, Brand, ShowroomCommissionOption, Category } from '@/lib/supabase';
 
 export default function AdminBoutiquesPage() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function AdminBoutiquesPage() {
   const [commissionOptionsByShowroomId, setCommissionOptionsByShowroomId] = useState<Record<number, ShowroomCommissionOption[]>>({});
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [allCities, setAllCities] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categoriesByShowroomId, setCategoriesByShowroomId] = useState<Record<number, Category[]>>({});
+  const [brandCategoryIds, setBrandCategoryIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const [activeBrand, setActiveBrand] = useState<Brand | null>(null);
@@ -25,23 +29,25 @@ export default function AdminBoutiquesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<Set<number>>(new Set());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      let brand: Brand | null = null;
       if (user) {
-        const { data: brand } = await supabase
+        const { data: brandData } = await supabase
           .from('brands')
           .select('*')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: true })
           .limit(1)
           .maybeSingle();
-        if (brand) setActiveBrand(brand as Brand);
+        if (brandData) { brand = brandData as Brand; setActiveBrand(brand); }
       }
 
-      const [showroomsRes, { data: badgesData }, { data: showroomBadgesData }, { data: commissionData }] = await Promise.all([
+      const [showroomsRes, { data: badgesData }, { data: showroomBadgesData }, { data: commissionData }, { data: catsData }, { data: showroomCatsData }, { data: brandCatsData }] = await Promise.all([
         supabase
           .from('showrooms')
           .select('id, name, city, description, avatar_url, image_url, instagram_handle, shop_type, is_permanent, start_date, end_date, candidature_open_from, candidature_open_to')
@@ -50,6 +56,9 @@ export default function AdminBoutiquesPage() {
         supabase.from('badges').select('*').order('sort_order'),
         supabase.from('showroom_badges').select('showroom_id, badge_id'),
         supabase.from('showroom_commission_options').select('*').order('sort_order'),
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('showroom_categories').select('showroom_id, category_id'),
+        brand ? supabase.from('brand_categories').select('category_id').eq('brand_id', (brand as Brand).id) : Promise.resolve({ data: [] }),
       ]);
 
       const showroomsList = (showroomsRes.data as Showroom[]) ?? [];
@@ -75,6 +84,21 @@ export default function AdminBoutiquesPage() {
         commissionByShowroom[opt.showroom_id].push(opt);
       }
       setCommissionOptionsByShowroomId(commissionByShowroom);
+
+      const catsList = (catsData as Category[]) ?? [];
+      setAllCategories(catsList);
+      const catMap = Object.fromEntries(catsList.map((c) => [c.id, c]));
+      const catsByShowroom: Record<number, Category[]> = {};
+      for (const sc of (showroomCatsData as { showroom_id: number; category_id: number }[]) ?? []) {
+        const cat = catMap[sc.category_id];
+        if (cat) {
+          if (!catsByShowroom[sc.showroom_id]) catsByShowroom[sc.showroom_id] = [];
+          catsByShowroom[sc.showroom_id].push(cat);
+        }
+      }
+      setCategoriesByShowroomId(catsByShowroom);
+      setBrandCategoryIds(new Set(((brandCatsData as { category_id: number }[]) ?? []).map((r) => r.category_id)));
+
       setLoading(false);
     })();
   }, []);
@@ -118,12 +142,15 @@ export default function AdminBoutiquesPage() {
         return true;
       });
     }
+    if (selectedCategoryId !== '') {
+      result = result.filter((s) => (categoriesByShowroomId[s.id] ?? []).some((c) => c.id === selectedCategoryId));
+    }
     return result;
-  }, [showrooms, searchQuery, selectedCity, selectedBadgeIds, badgesByShowroomId]);
+  }, [showrooms, searchQuery, selectedCity, selectedBadgeIds, badgesByShowroomId, selectedCategoryId, categoriesByShowroomId]);
 
   const toggleBadge = (id: number) => setSelectedBadgeIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-  const clearFilters = () => { setSearchQuery(''); setSelectedCity(''); setSelectedBadgeIds(new Set()); };
-  const hasActiveFilters = searchQuery.trim() !== '' || selectedCity !== '' || selectedBadgeIds.size > 0;
+  const clearFilters = () => { setSearchQuery(''); setSelectedCity(''); setSelectedBadgeIds(new Set()); setSelectedCategoryId(''); };
+  const hasActiveFilters = searchQuery.trim() !== '' || selectedCity !== '' || selectedBadgeIds.size > 0 || selectedCategoryId !== '';
 
   return (
     <div className="-mx-4 -my-4 lg:-mx-6 lg:-my-6 flex flex-col min-h-full">
@@ -158,6 +185,20 @@ export default function AdminBoutiquesPage() {
                 >
                   <option value="">Toutes les villes</option>
                   {allCities.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </div>
+            )}
+
+            {allCategories.length > 0 && (
+              <div className="relative">
+                <Layers className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+                  className={`appearance-none pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all cursor-pointer ${selectedCategoryId !== '' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-700 border-black/[0.08] hover:border-neutral-300'}`}
+                >
+                  <option value="">Toutes les catégories</option>
+                  {allCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </select>
               </div>
             )}
@@ -229,6 +270,21 @@ export default function AdminBoutiquesPage() {
                 commissionOptions={commissionOptionsByShowroomId[showroom.id] ?? []}
                 showReportButton={false}
               >
+                {(() => {
+                  const matchingCats = brandCategoryIds.size > 0
+                    ? (categoriesByShowroomId[showroom.id] ?? []).filter((c) => brandCategoryIds.has(c.id))
+                    : [];
+                  return matchingCats.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      {matchingCats.map((cat) => (
+                        <span key={cat.id} className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
+                          <CategoryIcon icon={cat.icon} className="h-3 w-3 shrink-0" />
+                          {cat.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 {activeBrand ? (
                   <div className="flex gap-2">
                     <Link

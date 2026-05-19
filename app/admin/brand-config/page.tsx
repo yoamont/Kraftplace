@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Check, Upload, ImageIcon, FileText } from 'lucide-r
 import type { Brand, Badge } from '@/lib/supabase';
 import { BrandFichePreview } from '../components/BrandFichePreview';
 import { BadgeIcon } from '../components/BadgeIcon';
+import { CategoryPicker } from '../components/CategoryPicker';
 import { SiretField } from '../components/SiretField';
 
 const BRAND_ASSETS_BUCKET = 'brand-assets';
@@ -58,6 +59,8 @@ export default function BrandConfigPage() {
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([]);
   const [initialBadgeIds, setInitialBadgeIds] = useState<number[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [initialCategoryIds, setInitialCategoryIds] = useState<number[]>([]);
   const [instagramHandle, setInstagramHandle] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
@@ -81,12 +84,18 @@ export default function BrandConfigPage() {
       setEmail(activeBrand.email ?? '');
       setPhone(activeBrand.phone ?? '');
       setRcProAttestationPath(activeBrand.rc_pro_attestation_path ?? null);
-      const { data: badgesData } = await supabase.from('badges').select('*').order('sort_order');
+      const [{ data: badgesData }, { data: brandBadgesData }, { data: brandCatsData }] = await Promise.all([
+        supabase.from('badges').select('*').order('sort_order'),
+        supabase.from('brand_badges').select('badge_id').eq('brand_id', activeBrand.id),
+        supabase.from('brand_categories').select('category_id').eq('brand_id', activeBrand.id),
+      ]);
       setAllBadges((badgesData as Badge[]) ?? []);
-      const { data: brandBadgesData } = await supabase.from('brand_badges').select('badge_id').eq('brand_id', activeBrand.id);
       const ids = ((brandBadgesData as { badge_id: number }[]) ?? []).map((r) => r.badge_id);
       setSelectedBadgeIds(ids);
       setInitialBadgeIds(ids);
+      const catIds = ((brandCatsData as { category_id: number }[]) ?? []).map((r) => r.category_id);
+      setSelectedCategoryIds(catIds);
+      setInitialCategoryIds(catIds);
       setInstagramHandle(activeBrand.instagram_handle ?? '');
       setWebsiteUrl(activeBrand.website_url ?? '');
       setLoading(false);
@@ -201,6 +210,8 @@ export default function BrandConfigPage() {
       (rcProAttestationPath ?? '') !== (activeBrand.rc_pro_attestation_path ?? '') ||
       selectedBadgeIds.length !== initialBadgeIds.length ||
       selectedBadgeIds.some((id, i) => initialBadgeIds[i] !== id) ||
+      selectedCategoryIds.length !== initialCategoryIds.length ||
+      selectedCategoryIds.some((id) => !initialCategoryIds.includes(id)) ||
       instagramHandle.trim() !== (activeBrand.instagram_handle ?? '') ||
       websiteUrl.trim() !== (activeBrand.website_url ?? ''));
 
@@ -248,12 +259,17 @@ export default function BrandConfigPage() {
         const { error: errBadges } = await supabase
           .from('brand_badges')
           .insert(selectedBadgeIds.map((badge_id) => ({ brand_id: activeBrand.id, badge_id })));
-        if (errBadges) {
-          setError(errBadges.message);
-          return;
-        }
+        if (errBadges) { setError(errBadges.message); return; }
+      }
+      await supabase.from('brand_categories').delete().eq('brand_id', activeBrand.id);
+      if (selectedCategoryIds.length > 0) {
+        const { error: errCats } = await supabase
+          .from('brand_categories')
+          .insert(selectedCategoryIds.map((category_id) => ({ brand_id: activeBrand.id, category_id })));
+        if (errCats) { setError(errCats.message); return; }
       }
       setInitialBadgeIds(selectedBadgeIds);
+      setInitialCategoryIds(selectedCategoryIds);
       setSavedSuccess(true);
       await refresh();
       router.refresh();
@@ -417,6 +433,12 @@ export default function BrandConfigPage() {
               );
             })}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">Catégories de produits</label>
+          <p className="text-xs text-neutral-500 mb-3">Quels types de produits proposez-vous ? Sélectionnez les catégories qui correspondent à votre catalogue.</p>
+          <CategoryPicker selectedIds={selectedCategoryIds} onChange={setSelectedCategoryIds} />
         </div>
 
         <div>

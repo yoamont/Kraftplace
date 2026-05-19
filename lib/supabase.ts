@@ -274,3 +274,26 @@ export type CandidatureThreadMessage = {
 // Table notifications supprimée de l'UX (voir archive SQL si besoin). Plus de type exporté.
 
 // Paiements (flux marketplace) - désactivés, types retirés.
+
+export type Category = {
+  id: number;
+  name: string;
+  slug: string;
+  group_name: string;
+  icon: string | null;
+  sort_order: number;
+};
+
+export type BrandCategory = {
+  id: string;
+  brand_id: number;
+  category_id: number;
+  created_at: string;
+};
+
+export type ShowroomCategory = {
+  id: string;
+  showroom_id: number;
+  category_id: number;
+  created_at: string;
+};
