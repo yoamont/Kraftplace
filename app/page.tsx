@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
 import type { Badge, Brand, Showroom } from '@/lib/supabase';
 import { Store, Sparkles, ArrowRight, Building2, Clock, MapPin } from 'lucide-react';
@@ -259,7 +260,7 @@ export default function HomePage() {
                 {filteredBrands.map((brand) => (
                   <Link
                     key={brand.id}
-                    href={`/marque/${brand.id}`}
+                    href={`/marque/${toSlug(brand.brand_name ?? '', brand.id)}`}
                     className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200"
                   >
                     <div className="aspect-[4/3] bg-neutral-100 overflow-hidden">
@@ -333,7 +334,7 @@ export default function HomePage() {
                   return (
                     <Link
                       key={showroom.id}
-                      href={`/boutique/${showroom.id}`}
+                      href={`/boutique/${toSlug(showroom.name ?? '', showroom.id)}`}
                       className="group rounded-2xl bg-white overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-200"
                     >
                       <div className="aspect-[4/3] bg-neutral-100 overflow-hidden">

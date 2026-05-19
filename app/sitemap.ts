@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { toSlug } from '@/lib/slug';
 
 const BASE_URL = 'https://kraftplace.fr';
 
@@ -22,8 +23,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const [{ data: listings }, { data: brands }, { data: showrooms }] = await Promise.all([
       supabase.from('listings').select('slug, updated_at').eq('status', 'published').order('updated_at', { ascending: false }),
-      supabase.from('brands').select('id, updated_at').order('updated_at', { ascending: false }),
-      supabase.from('showrooms').select('id, updated_at').eq('publication_status', 'published').order('updated_at', { ascending: false }),
+      supabase.from('brands').select('id, brand_name, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('showrooms').select('id, name, updated_at').eq('publication_status', 'published').order('updated_at', { ascending: false }),
     ]);
 
     for (const listing of listings ?? []) {
@@ -39,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const brand of brands ?? []) {
       dynamicPages.push({
-        url: `${BASE_URL}/marque/${brand.id}`,
+        url: `${BASE_URL}/marque/${toSlug(brand.brand_name, brand.id)}`,
         lastModified: brand.updated_at ? new Date(brand.updated_at) : new Date(),
         changeFrequency: 'weekly',
         priority: 0.8,
@@ -48,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const showroom of showrooms ?? []) {
       dynamicPages.push({
-        url: `${BASE_URL}/boutique/${showroom.id}`,
+        url: `${BASE_URL}/boutique/${toSlug(showroom.name, showroom.id)}`,
         lastModified: showroom.updated_at ? new Date(showroom.updated_at) : new Date(),
         changeFrequency: 'weekly',
         priority: 0.8,

@@ -5,6 +5,7 @@ import { Package, ExternalLink } from 'lucide-react';
 import { ReportButton } from '@/app/admin/components/ReportButton';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
+import { toSlug } from '@/lib/slug';
 
 export type BrandCardProps = {
   /** Données marque (mêmes champs Supabase partout : aperçu config + Parcourir les marques). */
@@ -94,7 +95,7 @@ export function BrandCard({ brand, products = [], badges = [], children, showRep
               {products.slice(0, 3).map((product) => (
                 <Link
                   key={product.id}
-                  href={`/marque/${brand.id}#produits`}
+                  href={`/marque/${toSlug(brand.brand_name, brand.id)}#produits`}
                   className="flex-1 min-w-0 flex flex-col rounded-xl bg-neutral-50/80 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] transition-shadow duration-150"
                 >
                   <div className="aspect-square bg-neutral-100">

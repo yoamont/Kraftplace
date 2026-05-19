@@ -67,6 +67,7 @@ export default function AdminMessagesPage() {
   const myLabel = activeBrand?.brand_name ?? activeShowroom?.name ?? 'Vous';
 
   return (
+    // Escape admin layout padding to fill full height
     <div className="flex -mx-4 -my-4 lg:-mx-6 lg:-my-6 overflow-hidden" style={{ height: 'calc(100% + 2rem)' }}>
 
       {/* Liste des conversations */}

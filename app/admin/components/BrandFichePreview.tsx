@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { BrandCard } from './cards/BrandCard';
 import type { Badge } from '@/lib/supabase';
+import { toSlug } from '@/lib/slug';
 
 type Props = {
   brandName: string;
@@ -35,7 +36,7 @@ export function BrandFichePreview({ brandName, description, avatarUrl, imageUrl,
     <BrandCard brand={brandPreview} badges={badges} showReportButton={false}>
       {linkToCollection ? (
         <Link
-          href={`/marque/${brandId}`}
+          href={`/marque/${toSlug(brandName, brandId)}`}
           className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors duration-150"
         >
           Voir plus

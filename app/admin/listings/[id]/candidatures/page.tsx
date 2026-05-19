@@ -7,6 +7,7 @@ import { useAdminEntity } from '../../../context/AdminEntityContext';
 import { supabase } from '@/lib/supabase';
 import { acceptCandidatureApi, rejectCandidatureApi } from '@/lib/api/candidatures';
 import { Loader2, ArrowLeft, MessageSquare, CheckCircle, XCircle, FileText, Package } from 'lucide-react';
+import { toSlug } from '@/lib/slug';
 import type { Brand, Candidature, ShowroomCommissionOption } from '@/lib/supabase';
 import { CandidatureDetailModal } from '../../../components/CandidatureDetailModal';
 
@@ -249,7 +250,7 @@ export default function ListingCandidaturesPage() {
                     </button>
                   )}
                   <Link
-                    href={`/marque/${r.brand_id}`}
+                    href={`/marque/${toSlug(r.brand?.brand_name ?? '', r.brand_id)}`}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-200 text-neutral-700 text-xs font-medium hover:bg-neutral-50"
                   >
                     <Package className="h-3.5 w-3.5" /> Voir le catalogue

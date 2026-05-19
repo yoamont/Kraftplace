@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal, MapPin, X, Loader2, Store, ArrowRight, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
@@ -242,7 +243,7 @@ export default function BoutiquesGaleriePage() {
                 {activeBrand ? (
                   <div className="flex gap-2">
                     <Link
-                      href={`/boutique/${showroom.id}`}
+                      href={`/boutique/${toSlug(showroom.name, showroom.id)}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors duration-150"
                     >
                       Voir la fiche
@@ -259,7 +260,7 @@ export default function BoutiquesGaleriePage() {
                   </div>
                 ) : (
                   <Link
-                    href={`/boutique/${showroom.id}`}
+                    href={`/boutique/${toSlug(showroom.name, showroom.id)}`}
                     className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors duration-150"
                   >
                     Voir la boutique

@@ -10,9 +10,10 @@ type Status = 'loading' | 'unauthenticated' | 'not_brand' | 'can_apply' | 'appli
 
 interface Props {
   showroomId: number;
+  showroomSlug: string;
 }
 
-export function CandidatureCTA({ showroomId }: Props) {
+export function CandidatureCTA({ showroomId, showroomSlug }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
   const [brandId, setBrandId] = useState<number | null>(null);
@@ -123,7 +124,7 @@ export function CandidatureCTA({ showroomId }: Props) {
         <p className="text-sm font-semibold leading-snug">Candidatez pour exposer<br />dans cette boutique</p>
         <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <Link
-            href={`/login?redirect=/boutique/${showroomId}`}
+            href={`/login?redirect=/boutique/${showroomSlug}`}
             className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 text-sm font-semibold hover:bg-neutral-100 transition-colors"
           >
             Se connecter pour candidater

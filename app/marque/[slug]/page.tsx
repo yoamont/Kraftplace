@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Package, Instagram, Globe, ExternalLink, ChevronLeft } from 'lucide-react';
@@ -7,6 +7,7 @@ import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import type { Brand, Product, Badge } from '@/lib/supabase';
 import { ShareButton } from '@/components/public/ShareButton';
+import { toSlug, idFromSlug } from '@/lib/slug';
 import type { Metadata } from 'next';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -16,11 +17,11 @@ const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const { data: brands } = await supabase.from('brands').select('id');
-  return (brands ?? []).map((b: { id: number }) => ({ id: String(b.id) }));
+  const { data: brands } = await supabase.from('brands').select('id, brand_name');
+  return (brands ?? []).map((b: { id: number; brand_name: string }) => ({ slug: toSlug(b.brand_name, b.id) }));
 }
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ slug: string }> };
 
 async function getBrand(id: number) {
   const [{ data: brand }, { data: products }, { data: badgeRows }, { data: allBadges }] = await Promise.all([
@@ -38,15 +39,17 @@ async function getBrand(id: number) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const numId = parseInt(id, 10);
-  if (isNaN(numId)) return { title: 'Marque introuvable' };
+  const { slug } = await params;
+  const numId = idFromSlug(slug);
+  if (!numId) return { title: 'Marque introuvable' };
 
   const data = await getBrand(numId);
   if (!data) return { title: 'Marque introuvable' };
 
   const { brand, badges, products } = data;
+  const canonicalSlug = toSlug(brand.brand_name, numId);
   const badgeLabels = badges.map((b) => b.label).join(', ');
+  const canonicalUrl = `https://kraftplace.fr/marque/${canonicalSlug}`;
 
   const title = `${brand.brand_name} — Marque artisanale${badgeLabels ? ` ${badges[0]?.label}` : ''} | Kraftplace`;
   const description = brand.description?.trim()
@@ -57,10 +60,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: `https://kraftplace.fr/marque/${numId}` },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title, description, type: 'website',
-      url: `https://kraftplace.fr/marque/${numId}`,
+      url: canonicalUrl,
       ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630, alt: brand.brand_name }] } : {}),
       siteName: 'Kraftplace',
     },
@@ -74,14 +77,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function MarquePage({ params }: Props) {
-  const { id } = await params;
-  const numId = parseInt(id, 10);
-  if (isNaN(numId)) notFound();
+  const { slug } = await params;
+  const numId = idFromSlug(slug);
+  if (!numId) notFound();
 
   const data = await getBrand(numId);
   if (!data) notFound();
 
   const { brand, products, badges } = data;
+
+  // Redirect malformed slugs (e.g. old /marque/7 numeric-only URLs)
+  const canonicalSlug = toSlug(brand.brand_name, numId);
+  if (slug !== canonicalSlug) redirect(`/marque/${canonicalSlug}`);
+
+  const canonicalUrl = `https://kraftplace.fr/marque/${canonicalSlug}`;
 
   const sameAs: string[] = [];
   if (brand.instagram_handle?.trim()) sameAs.push(`https://instagram.com/${brand.instagram_handle.trim().replace(/^@/, '')}`);
@@ -92,7 +101,7 @@ export default async function MarquePage({ params }: Props) {
     '@type': 'Organization',
     name: brand.brand_name,
     description: brand.description?.trim() ?? undefined,
-    url: brand.website_url?.trim() || `https://kraftplace.fr/marque/${numId}`,
+    url: brand.website_url?.trim() || canonicalUrl,
     ...(brand.avatar_url?.trim() ? { logo: brand.avatar_url.trim() } : {}),
     ...(brand.image_url?.trim() ? { image: brand.image_url.trim() } : {}),
     ...(sameAs.length > 0 ? { sameAs } : {}),
@@ -225,7 +234,7 @@ export default async function MarquePage({ params }: Props) {
               <ShareButton
                 title={`${brand.brand_name} — Marque sur Kraftplace`}
                 text={`Découvrez ${brand.brand_name} sur Kraftplace`}
-                url={`https://kraftplace.fr/marque/${numId}`}
+                url={canonicalUrl}
               />
             </div>
           </div>

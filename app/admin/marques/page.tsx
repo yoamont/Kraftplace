@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal, X, Loader2, Package, MessageSquare, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { toSlug } from '@/lib/slug';
 import { supabase } from '@/lib/supabase';
 import { BrandCard } from '@/app/admin/components/cards/BrandCard';
 import { BadgeIcon } from '@/app/admin/components/BadgeIcon';
@@ -207,7 +208,7 @@ export default function AdminMarquesPage() {
                 {activeShowroom ? (
                   <div className="flex gap-2">
                     <Link
-                      href={`/marque/${brand.id}`}
+                      href={`/marque/${toSlug(brand.brand_name, brand.id)}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors duration-150"
                     >
                       Voir la fiche
@@ -224,7 +225,7 @@ export default function AdminMarquesPage() {
                   </div>
                 ) : (
                   <Link
-                    href={`/marque/${brand.id}`}
+                    href={`/marque/${toSlug(brand.brand_name, brand.id)}`}
                     className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-sm font-medium hover:bg-neutral-50 transition-colors duration-150"
                   >
                     Voir la marque
