@@ -115,14 +115,11 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <section className="flex flex-col items-center justify-center px-4 pt-16 pb-14 sm:pt-20 sm:pb-18 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-neutral-900 tracking-tight max-w-2xl leading-[1.2]">
-          <span className="font-bold">Kraftplace.</span>{' '}
-          Le trait d&apos;union entre{' '}
-          <span className="font-bold">lieux engagés</span>{' '}
-          et{' '}
-          <span className="font-bold">marques éthiques</span>.
+          <span className="font-bold">Kraftplace&nbsp;:</span>{' '}
+          Le commerce engagé.
         </h1>
         <p className="mt-4 text-sm sm:text-base text-neutral-500 max-w-md">
-          La plateforme B2B qui connecte boutiques indépendantes et marques engagées.
+          La plateforme B2B qui connecte boutiques indépendantes et marques responsables.
         </p>
 
         {badges.length > 0 && (
@@ -227,7 +224,7 @@ export default function HomePage() {
           {/* ── Marques ── */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Marques à découvrir</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Marques</h2>
               <Link href="/marques" className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">
                 Voir toutes <ArrowRight className="h-3.5 w-3.5" />
               </Link>
@@ -288,7 +285,7 @@ export default function HomePage() {
           {/* ── Boutiques ── */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Boutiques qui recrutent</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">Boutiques</h2>
               <Link href="/boutiques" className="inline-flex items-center gap-1 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">
                 Voir toutes <ArrowRight className="h-3.5 w-3.5" />
               </Link>
