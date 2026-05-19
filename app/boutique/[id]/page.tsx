@@ -7,6 +7,7 @@ import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import type { Showroom, ShowroomCommissionOption, Badge } from '@/lib/supabase';
 import { ShareButton } from '@/components/public/ShareButton';
+import { CandidatureCTA } from './CandidatureCTA';
 import type { Metadata } from 'next';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -276,6 +277,7 @@ export default async function BoutiquePage({ params }: Props) {
           )}
 
           {/* CTA marques */}
+<<<<<<< HEAD
           <div className="mx-6 mb-6 p-6 rounded-2xl bg-neutral-900 text-white text-center">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">Vous êtes une marque ?</p>
             <p className="text-sm font-semibold leading-snug">
@@ -296,6 +298,9 @@ export default async function BoutiquePage({ params }: Props) {
               </Link>
             </div>
           </div>
+=======
+          <CandidatureCTA showroomId={numId} />
+>>>>>>> 8d3665d (fix: candidature CTA on boutique fiche detects auth state client-side)
         </div>
       </main>
 
