@@ -28,7 +28,6 @@ export function UserMenu({ entityName, avatarUrl, role }: Props) {
   async function handleLogout() {
     setOpen(false);
     await supabase.auth.signOut();
-    router.push('/');
     router.refresh();
   }
 

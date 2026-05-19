@@ -16,7 +16,7 @@ export function LandingHeader() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setAuthChecked(true); return; }
+      if (!user) { setEntity(null); setAuthChecked(true); return; }
 
       const [{ data: brand }, { data: showroom }] = await Promise.all([
         supabase.from('brands').select('brand_name, avatar_url').eq('owner_id', user.id).order('id').limit(1).maybeSingle(),
